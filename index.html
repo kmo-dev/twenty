@@ -894,9 +894,12 @@
                 ctx.stroke();
             }
 
-            // Kanone (größer und nach LINKS OBEN rotiert)
+            // Kanone (größer und dynamisch auf Santa gerichtet)
             const cannonX = cannon.x + recoilX;
-            const cannonAngle = Math.PI / 6; // +30 Grad (nach LINKS OBEN)
+            // Berechne Winkel zu Santa
+            const dx = santa.x + santa.width / 2 - cannon.x;
+            const dy = santa.y + santa.height / 2 - cannon.y;
+            const cannonAngle = Math.atan2(dy, dx); // Zeigt direkt auf Santa
 
             // Kanonen-Basis (Holz) - größer
             ctx.fillStyle = '#654321';
@@ -1293,22 +1296,26 @@
                 // Schießen (auch während des Fallens!)
                 cannon.shootTimer--;
                 if (cannon.shootTimer <= 0) {
-                    // Berechne Mündungsposition (Kanone ist +30° rotiert = nach LINKS OBEN)
-                    // Mündung ist jetzt bei -115 vom Drehpunkt
-                    const cannonAngle = Math.PI / 6; // +30 Grad (nach links oben)
+                    // Berechne Winkel zu Santa (dynamisch)
+                    const dx = santa.x + santa.width / 2 - cannon.x;
+                    const dy = santa.y + santa.height / 2 - cannon.y;
+                    const cannonAngle = Math.atan2(dy, dx);
+
+                    // Berechne Mündungsposition
                     const barrelLength = -115;  // Negativ weil nach links
                     const muzzleX = cannon.x + 10 + barrelLength * Math.cos(cannonAngle);
                     const muzzleY = cannon.y + 50 + barrelLength * Math.sin(cannonAngle);
 
-                    // Tannenbaum schießen (nach LINKS und leicht OBEN, flacher Bogen)
-                    const speed = 11;
+                    // Tannenbaum schießen (DIREKT auf Santa, ohne Bogen)
+                    const speed = 8;
                     flyingTrees.push({
                         x: muzzleX,
                         y: muzzleY,
-                        vx: -speed * 0.85,   // nach links: ca. -9.35 (mehr horizontal)
-                        vy: -speed * 0.4,    // nach oben: ca. -4.4 (flacher Winkel)
+                        vx: speed * Math.cos(cannonAngle),
+                        vy: speed * Math.sin(cannonAngle),
                         rotation: Math.PI / 4,  // Anfangsrotation
-                        rotationSpeed: 0.15
+                        rotationSpeed: 0.15,
+                        hasGravity: false  // Keine Gravität - fliegt direkt
                     });
 
                     // Rückstoß!
@@ -1372,8 +1379,10 @@
                 tree.y += tree.vy;
                 tree.rotation += tree.rotationSpeed;
 
-                // Gravität
-                tree.vy += 0.1;
+                // Gravität (nur wenn hasGravity nicht false ist)
+                if (tree.hasGravity !== false) {
+                    tree.vy += 0.1;
+                }
 
                 // Entferne wenn außerhalb
                 if (tree.x < -50 || tree.y > canvas.height + 50) {
