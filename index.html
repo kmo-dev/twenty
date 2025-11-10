@@ -1030,18 +1030,18 @@
             ctx.fill();
             ctx.stroke();
 
-            // Arme (dick und rund mit Schwing-Animation)
-            const armSwing = Math.sin(gingerbread.walkPhase) * 0.3;
+            // Arme (dick und rund mit Schwing-Animation von der Schulter)
+            const armSwing = Math.sin(gingerbread.walkPhase) * 0.6; // Stärkere Rotation
 
-            // Linker Arm (schwingt entgegengesetzt zu rechtem Bein)
-            const leftArmY = drawY + 10 + Math.sin(gingerbread.walkPhase) * 8;
+            // Linker Arm (schwingt entgegengesetzt zu rechtem Bein, rotiert von Schulter)
+            const leftArmY = drawY + 10;
             ctx.beginPath();
             ctx.ellipse(gingerbread.x - 85, leftArmY, 20, 50, -0.3 - armSwing, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
-            // Rechter Arm (schwingt entgegengesetzt zu linkem Bein)
-            const rightArmY = drawY + 10 - Math.sin(gingerbread.walkPhase) * 8;
+            // Rechter Arm (schwingt entgegengesetzt zu linkem Bein, rotiert von Schulter)
+            const rightArmY = drawY + 10;
             ctx.beginPath();
             ctx.ellipse(gingerbread.x + 85, rightArmY, 20, 50, 0.3 + armSwing, 0, Math.PI * 2);
             ctx.fill();
@@ -1060,25 +1060,52 @@
                 ctx.stroke();
             }
 
-            // Zuckerguss auf Kopf (Verzierung)
+            // BÖSE Augenbrauen (schräg nach unten)
+            ctx.fillStyle = '#000000';
             ctx.beginPath();
-            // Augenbrauen
-            ctx.arc(gingerbread.x - 20, drawY - 90, 8, 0, Math.PI * 2);
-            ctx.arc(gingerbread.x + 20, drawY - 90, 8, 0, Math.PI * 2);
+            // Linke Augenbraue (schräg und dick)
+            ctx.moveTo(gingerbread.x - 32, drawY - 92);
+            ctx.lineTo(gingerbread.x - 12, drawY - 88);
+            ctx.lineTo(gingerbread.x - 12, drawY - 84);
+            ctx.lineTo(gingerbread.x - 32, drawY - 88);
+            ctx.closePath();
+            ctx.fill();
+            // Rechte Augenbraue (schräg und dick)
+            ctx.moveTo(gingerbread.x + 12, drawY - 88);
+            ctx.lineTo(gingerbread.x + 32, drawY - 92);
+            ctx.lineTo(gingerbread.x + 32, drawY - 88);
+            ctx.lineTo(gingerbread.x + 12, drawY - 84);
+            ctx.closePath();
             ctx.fill();
 
-            // Augen (schwarz, groß)
-            ctx.fillStyle = '#000000';
+            // Augen (schwarz, groß und böse - keine weißen Punkte mehr)
+            ctx.fillStyle = '#ff0000'; // Rote glühende Augen
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = 10;
             ctx.beginPath();
             ctx.arc(gingerbread.x - 20, drawY - 85, 8, 0, Math.PI * 2);
             ctx.arc(gingerbread.x + 20, drawY - 85, 8, 0, Math.PI * 2);
             ctx.fill();
+            ctx.shadowBlur = 0;
 
-            // Lächelnder Mund (geschwungen)
+            // Pupillen (klein und böse)
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(gingerbread.x - 20, drawY - 85, 3, 0, Math.PI * 2);
+            ctx.arc(gingerbread.x + 20, drawY - 85, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Böser Mund (zackig nach unten)
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 4;
             ctx.beginPath();
-            ctx.arc(gingerbread.x, drawY - 75, 20, 0.2, Math.PI - 0.2);
+            ctx.moveTo(gingerbread.x - 18, drawY - 72);
+            ctx.lineTo(gingerbread.x - 12, drawY - 68);
+            ctx.lineTo(gingerbread.x - 6, drawY - 72);
+            ctx.lineTo(gingerbread.x, drawY - 68);
+            ctx.lineTo(gingerbread.x + 6, drawY - 72);
+            ctx.lineTo(gingerbread.x + 12, drawY - 68);
+            ctx.lineTo(gingerbread.x + 18, drawY - 72);
             ctx.stroke();
 
             // Zuckerguss-Knöpfe auf Armen
