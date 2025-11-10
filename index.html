@@ -734,58 +734,16 @@
             }
         }
 
-        // Zeichne Baum-Kanone mit Rentier
+        // Zeichne Baum-Kanone (ohne Rentier, gespiegelt)
         function drawTreeCannon(cannon) {
             ctx.save();
 
             // Rückstoß-Offset
             const recoilX = cannon.recoilOffset || 0;
 
-            // Rentier vorne (zieht die Kanone) - mehr Abstand
-            const deerX = cannon.x - 160 + recoilX;
-            const deerY = cannon.y + 40;
-
-            // Rentier Körper (braun) - größer
-            ctx.fillStyle = '#8B4513';
-            ctx.fillRect(deerX, deerY, 60, 30);
-
-            // Kopf
-            ctx.fillRect(deerX - 25, deerY + 8, 30, 24);
-
-            // Geweih (größer)
-            ctx.strokeStyle = '#654321';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(deerX - 12, deerY + 8);
-            ctx.lineTo(deerX - 18, deerY - 18);
-            ctx.moveTo(deerX - 6, deerY + 8);
-            ctx.lineTo(deerX - 12, deerY - 12);
-            ctx.moveTo(deerX + 6, deerY + 8);
-            ctx.lineTo(deerX, deerY - 12);
-            ctx.stroke();
-
-            // Nase (rot - Rudolph!)
-            ctx.fillStyle = '#ff0000';
-            ctx.beginPath();
-            ctx.arc(deerX - 25, deerY + 20, 5, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Beine
-            ctx.fillStyle = '#8B4513';
-            ctx.fillRect(deerX + 8, deerY + 30, 7, 18);
-            ctx.fillRect(deerX + 38, deerY + 30, 7, 18);
-
-            // Seil zur Kanone
-            ctx.strokeStyle = '#654321';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(deerX + 60, deerY + 15);
-            ctx.lineTo(cannon.x - 60 + recoilX, cannon.y + 55);
-            ctx.stroke();
-
-            // Kanone (größer und rotiert)
+            // Kanone (größer und nach rechts rotiert)
             const cannonX = cannon.x + recoilX;
-            const cannonAngle = -Math.PI / 6; // -30 Grad (nach links oben)
+            const cannonAngle = Math.PI / 6; // +30 Grad (nach rechts oben)
 
             // Kanonen-Basis (Holz) - größer
             ctx.fillStyle = '#654321';
@@ -804,7 +762,7 @@
             ctx.fill();
             ctx.stroke();
 
-            // Kanonen-Rohr (rotiert, größer)
+            // Kanonen-Rohr (rotiert nach rechts oben)
             ctx.save();
             ctx.translate(cannonX + 10, cannon.y + 50);
             ctx.rotate(cannonAngle);
@@ -853,11 +811,11 @@
         // Spawne Baum-Kanone
         function spawnTreeCannon() {
             treeCannons.push({
-                x: canvas.width + 200,
+                x: canvas.width - 200,  // Erscheint rechts im Bild
                 y: canvas.height - 180,
                 width: 200,
                 height: 100,
-                speed: 0.5,
+                speed: 0,  // Bewegt sich nicht - steht fest
                 health: 10,
                 maxHealth: 10,
                 shootTimer: 120 + Math.floor(Math.random() * 60),
@@ -1155,33 +1113,33 @@
                 cannon.x -= cannon.speed;
 
                 // Rückstoß-Animation
-                if (cannon.recoilOffset > 0) {
-                    cannon.recoilOffset -= 2;
-                    if (cannon.recoilOffset < 0) cannon.recoilOffset = 0;
+                if (cannon.recoilOffset < 0) {
+                    cannon.recoilOffset += 2;
+                    if (cannon.recoilOffset > 0) cannon.recoilOffset = 0;
                 }
 
                 // Schießen
                 cannon.shootTimer--;
-                if (cannon.shootTimer <= 0 && cannon.x > 0 && cannon.x < canvas.width - 100) {
-                    // Berechne Mündungsposition (Kanone ist -30° rotiert)
-                    const cannonAngle = -Math.PI / 6; // -30 Grad
+                if (cannon.shootTimer <= 0) {
+                    // Berechne Mündungsposition (Kanone ist +30° rotiert)
+                    const cannonAngle = Math.PI / 6; // +30 Grad
                     const barrelLength = 100;
                     const muzzleX = cannon.x + 10 + barrelLength * Math.cos(cannonAngle);
                     const muzzleY = cannon.y + 50 + barrelLength * Math.sin(cannonAngle);
 
-                    // Tannenbaum schießen (in Richtung der Kanone: nach links oben)
+                    // Tannenbaum schießen (nach rechts unten, auf Santa zu)
                     const speed = 10;
                     flyingTrees.push({
                         x: muzzleX,
                         y: muzzleY,
-                        vx: -speed * Math.cos(Math.PI / 6),  // nach links: ca. -8.66
-                        vy: -speed * Math.sin(Math.PI / 6),  // nach oben: ca. -5
-                        rotation: Math.PI / 4,  // Anfangsrotation
+                        vx: speed * Math.cos(Math.PI / 6),   // nach rechts: ca. +8.66
+                        vy: speed * Math.sin(Math.PI / 6),   // nach unten: ca. +5
+                        rotation: -Math.PI / 4,  // Anfangsrotation (spiegelt)
                         rotationSpeed: 0.15
                     });
 
                     // Rückstoß!
-                    cannon.recoilOffset = 20;
+                    cannon.recoilOffset = -20;  // Nach links (wegen Rückstoß)
 
                     // Nadel-Konfetti beim Schuss aus der Mündung!
                     createNeedleConfetti(muzzleX, muzzleY, 25);
