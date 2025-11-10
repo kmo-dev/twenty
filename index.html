@@ -369,6 +369,7 @@
         const golems = [];
         const treeCannons = [];
         const flyingTrees = [];
+        const gingerbreadMen = [];
 
         // Spawn Timer
         let snowmanSpawnTimer = 0;
@@ -379,6 +380,8 @@
         let golemSpawnInterval = 600 + Math.floor(Math.random() * 300); // 10-15 Sekunden bei 60fps
         let treeCannonSpawnTimer = 0;
         let treeCannonSpawnInterval = 900 + Math.floor(Math.random() * 300); // 15-20 Sekunden
+        let gingerbreadSpawnTimer = 0;
+        let gingerbreadSpawnInterval = 1200 + Math.floor(Math.random() * 600); // 20-30 Sekunden
         let shootCooldown = 0;
 
         // Hintergrund Elemente
@@ -982,6 +985,163 @@
             });
         }
 
+        // Zeichne Lebkuchenmann (riesiger Boss)
+        function drawGingerbreadMan(gingerbread) {
+            ctx.save();
+
+            // Gehanimation
+            gingerbread.walkPhase = (gingerbread.walkPhase || 0) + 0.15;
+            const bounce = Math.abs(Math.sin(gingerbread.walkPhase)) * 8;
+
+            const drawY = gingerbread.y - bounce;
+
+            // Körper (großer Lebkuchenmann)
+            ctx.fillStyle = '#8B4513'; // Lebkuchenbraun
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 4;
+
+            // Beine (zwei große runde Beine)
+            const legOffset = Math.sin(gingerbread.walkPhase) * 10;
+
+            // Linkes Bein
+            ctx.beginPath();
+            ctx.ellipse(gingerbread.x - 30, drawY + 100, 25, 40, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Rechtes Bein
+            ctx.beginPath();
+            ctx.ellipse(gingerbread.x + 30, drawY + 100, 25, 40, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Körper (großer gerundeter Körper)
+            ctx.beginPath();
+            ctx.ellipse(gingerbread.x, drawY + 20, 70, 90, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Kopf (großer runder Kopf)
+            ctx.beginPath();
+            ctx.arc(gingerbread.x, drawY - 80, 50, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Arme (dick und rund)
+            // Linker Arm
+            ctx.beginPath();
+            ctx.ellipse(gingerbread.x - 85, drawY + 10, 20, 50, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Rechter Arm
+            ctx.beginPath();
+            ctx.ellipse(gingerbread.x + 85, drawY + 10, 20, 50, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Zuckerguss-Dekoration (weiß)
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#cccccc';
+            ctx.lineWidth = 2;
+
+            // Knöpfe auf dem Körper (3 große runde Knöpfe)
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.arc(gingerbread.x, drawY - 20 + i * 30, 10, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            // Zuckerguss auf Kopf (Verzierung)
+            ctx.beginPath();
+            // Augenbrauen
+            ctx.arc(gingerbread.x - 20, drawY - 90, 8, 0, Math.PI * 2);
+            ctx.arc(gingerbread.x + 20, drawY - 90, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Augen (schwarz, groß)
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(gingerbread.x - 20, drawY - 85, 8, 0, Math.PI * 2);
+            ctx.arc(gingerbread.x + 20, drawY - 85, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Lächelnder Mund (geschwungen)
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(gingerbread.x, drawY - 75, 20, 0.2, Math.PI - 0.2);
+            ctx.stroke();
+
+            // Zuckerguss-Knöpfe auf Armen und Beinen
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#cccccc';
+            ctx.lineWidth = 2;
+            // Linker Arm
+            ctx.beginPath();
+            ctx.arc(gingerbread.x - 85, drawY + 10, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            // Rechter Arm
+            ctx.beginPath();
+            ctx.arc(gingerbread.x + 85, drawY + 10, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Health Bar über dem Kopf
+            const barWidth = 100;
+            const barHeight = 10;
+            const healthPercent = gingerbread.health / gingerbread.maxHealth;
+
+            // Hintergrund (rot)
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(gingerbread.x - barWidth / 2, drawY - 140, barWidth, barHeight);
+
+            // Gesundheit (grün)
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(gingerbread.x - barWidth / 2, drawY - 140, barWidth * healthPercent, barHeight);
+
+            // Rahmen
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(gingerbread.x - barWidth / 2, drawY - 140, barWidth, barHeight);
+
+            ctx.restore();
+        }
+
+        // Spawne Lebkuchenmann
+        function spawnGingerbreadMan() {
+            gingerbreadMen.push({
+                x: canvas.width + 100,
+                y: canvas.height - 240,  // Größer, also höhere Position
+                width: 180,
+                height: 240,
+                vx: -1,  // Langsam nach links
+                health: 20,
+                maxHealth: 20,
+                walkPhase: 0
+            });
+        }
+
+        // Braune Krümel-Partikel für Lebkuchenmann-Explosion
+        function createGingerbreadCrumbs(x, y, count) {
+            for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 * i) / count;
+                const speed = 2 + Math.random() * 4;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - Math.random() * 2,
+                    size: 3 + Math.random() * 5,
+                    color: ['#8B4513', '#A0522D', '#D2691E'][Math.floor(Math.random() * 3)],  // Verschiedene Brauntöne
+                    life: 60,
+                    gravity: 0.2
+                });
+            }
+        }
+
         // Zeichne fliegenden Tannenbaum
         function drawFlyingTree(tree) {
             ctx.save();
@@ -1520,6 +1680,54 @@
                 }
             }
 
+            // Update Lebkuchenmänner
+            for (let i = gingerbreadMen.length - 1; i >= 0; i--) {
+                const gingerbread = gingerbreadMen[i];
+                gingerbread.x += gingerbread.vx;
+
+                // Entferne wenn zu weit links
+                if (gingerbread.x < -150) {
+                    gingerbreadMen.splice(i, 1);
+                    continue;
+                }
+
+                // Kollision mit Santa
+                const distToSanta = Math.abs(gingerbread.x - santa.x);
+                if (distToSanta < 80 && Math.abs(gingerbread.y - santa.y) < 100) {
+                    santa.health -= 2; // Macht mehr Schaden als normale Gegner!
+                    createGingerbreadCrumbs(gingerbread.x, gingerbread.y, 40);
+                    gingerbreadMen.splice(i, 1);
+
+                    if (santa.health <= 0) {
+                        gameOver();
+                    }
+                    continue;
+                }
+
+                // Kollision mit Schneekugeln
+                for (let j = snowballs.length - 1; j >= 0; j--) {
+                    const ball = snowballs[j];
+                    const dx = ball.x - gingerbread.x;
+                    const dy = ball.y - gingerbread.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < ball.radius + 90) {
+                        gingerbread.health--;
+                        snowballs.splice(j, 1);
+                        createGingerbreadCrumbs(gingerbread.x, gingerbread.y, 10);
+
+                        if (gingerbread.health <= 0) {
+                            // Riesige Explosion mit vielen Krümeln!
+                            createGingerbreadCrumbs(gingerbread.x, gingerbread.y, 60);
+                            gingerbreadMen.splice(i, 1);
+                            score += 150; // Hoher Score für Boss!
+                            document.getElementById('score').textContent = score;
+                        }
+                        break;
+                    }
+                }
+            }
+
             // Update Schneeflocken (fallen gerade nach unten)
             snowflakes.forEach(flake => {
                 flake.y += flake.speed;
@@ -1586,6 +1794,15 @@
                 treeCannonSpawnTimer = 0;
                 // Zufälliges nächstes Intervall
                 treeCannonSpawnInterval = 900 + Math.floor(Math.random() * 300);
+            }
+
+            // Spawne Lebkuchenmann
+            gingerbreadSpawnTimer++;
+            if (gingerbreadSpawnTimer >= gingerbreadSpawnInterval) {
+                spawnGingerbreadMan();
+                gingerbreadSpawnTimer = 0;
+                // Zufälliges nächstes Intervall
+                gingerbreadSpawnInterval = 1200 + Math.floor(Math.random() * 600);
             }
         }
 
@@ -1656,6 +1873,9 @@
             // Golems (größer, darüber)
             golems.forEach(drawGolem);
 
+            // Lebkuchenmänner (riesiger Boss)
+            gingerbreadMen.forEach(drawGingerbreadMan);
+
             // Baum-Kanonen (Boss-Gegner)
             treeCannons.forEach(drawTreeCannon);
 
@@ -1713,6 +1933,7 @@
             golems.length = 0;
             treeCannons.length = 0;
             flyingTrees.length = 0;
+            gingerbreadMen.length = 0;
             snowmanSpawnTimer = 0;
             snowmanSpawnInterval = 120;
             reindeerSpawnTimer = 0;
@@ -1721,6 +1942,8 @@
             golemSpawnInterval = 600 + Math.floor(Math.random() * 300);
             treeCannonSpawnTimer = 0;
             treeCannonSpawnInterval = 900 + Math.floor(Math.random() * 300);
+            gingerbreadSpawnTimer = 0;
+            gingerbreadSpawnInterval = 1200 + Math.floor(Math.random() * 600);
             document.getElementById('score').textContent = score;
             document.getElementById('gameOver').style.display = 'none';
         }
