@@ -252,12 +252,15 @@
         const snowflakes = [];
         const reindeer = [];
         const gifts = [];
+        const golems = [];
 
         // Spawn Timer
         let snowmanSpawnTimer = 0;
         let snowmanSpawnInterval = 120; // Frames
         let reindeerSpawnTimer = 0;
         let reindeerSpawnInterval = 200; // Frames
+        let golemSpawnTimer = 0;
+        let golemSpawnInterval = 600 + Math.floor(Math.random() * 300); // 10-15 Sekunden bei 60fps
         let shootCooldown = 0;
 
         // Hintergrund Elemente
@@ -529,6 +532,149 @@
             });
         }
 
+        // Zeichne Golem
+        function drawGolem(golem) {
+            const drawY = golem.y;
+
+            ctx.save();
+
+            // Squash and Stretch basierend auf Walking-Phase
+            let scaleX = 1;
+            let scaleY = 1;
+
+            const walkValue = Math.sin(golem.walkPhase);
+            if (Math.abs(walkValue) > 0.7) {
+                // Beim Auftreten - stauchen
+                scaleY = 0.95;
+                scaleX = 1.05;
+            }
+
+            // Transformation für Squash/Stretch anwenden
+            ctx.translate(golem.x, drawY + 90);
+            ctx.scale(scaleX, scaleY);
+            ctx.translate(-golem.x, -(drawY + 90));
+
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 3;
+
+            // Beine (Walking Animation)
+            const legSwing = Math.sin(golem.walkPhase) * 10;
+
+            // Linkes Bein
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.moveTo(golem.x - 15, drawY + 60);
+            ctx.lineTo(golem.x - 10 + legSwing, drawY + 90);
+            ctx.lineTo(golem.x - 20 + legSwing, drawY + 90);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Rechtes Bein
+            ctx.beginPath();
+            ctx.moveTo(golem.x + 15, drawY + 60);
+            ctx.lineTo(golem.x + 20 - legSwing, drawY + 90);
+            ctx.lineTo(golem.x + 10 - legSwing, drawY + 90);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Unterer Körper (größer)
+            ctx.beginPath();
+            ctx.arc(golem.x, drawY + 50, 35, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Mittlerer Körper
+            ctx.beginPath();
+            ctx.arc(golem.x, drawY + 15, 28, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Kopf (groß)
+            ctx.beginPath();
+            ctx.arc(golem.x, drawY - 20, 22, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Augen (böse)
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(golem.x - 8, drawY - 24, 4, 0, Math.PI * 2);
+            ctx.arc(golem.x + 8, drawY - 24, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mund (grimmig)
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(golem.x - 10, drawY - 12);
+            ctx.lineTo(golem.x - 5, drawY - 8);
+            ctx.lineTo(golem.x + 5, drawY - 8);
+            ctx.lineTo(golem.x + 10, drawY - 12);
+            ctx.stroke();
+
+            // Arme (dick)
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 3;
+
+            // Linker Arm
+            ctx.beginPath();
+            ctx.arc(golem.x - 35, drawY + 20, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Rechter Arm
+            ctx.beginPath();
+            ctx.arc(golem.x + 35, drawY + 20, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Knöpfe (schwarz, größer)
+            ctx.fillStyle = '#000000';
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath();
+                ctx.arc(golem.x, drawY + 5 + i * 12, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Health Bar über dem Kopf
+            const barWidth = 60;
+            const barHeight = 6;
+            const healthPercent = golem.health / golem.maxHealth;
+
+            // Hintergrund (rot)
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(golem.x - barWidth / 2, drawY - 50, barWidth, barHeight);
+
+            // Gesundheit (grün)
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(golem.x - barWidth / 2, drawY - 50, barWidth * healthPercent, barHeight);
+
+            // Rahmen
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(golem.x - barWidth / 2, drawY - 50, barWidth, barHeight);
+
+            ctx.restore();
+        }
+
+        // Spawne Golem
+        function spawnGolem() {
+            golems.push({
+                x: canvas.width + 100,
+                y: canvas.height - 210,  // Größerer Offset wegen Größe
+                width: 80,
+                height: 110,
+                speed: 1 + Math.random() * 0.5,  // Langsamer als Schneemänner
+                health: 5,
+                maxHealth: 5,
+                walkPhase: Math.random() * Math.PI * 2
+            });
+        }
+
         // Zeichne Rentier
         function drawReindeer(deer) {
             ctx.save();
@@ -724,6 +870,59 @@
                 }
             }
 
+            // Update Golems
+            for (let i = golems.length - 1; i >= 0; i--) {
+                const golem = golems[i];
+                golem.x -= golem.speed;
+
+                // Walking Animation
+                golem.walkPhase += 0.08;
+
+                // Entferne wenn zu weit links
+                if (golem.x < -150) {
+                    golems.splice(i, 1);
+                    continue;
+                }
+
+                // Kollision mit Santa
+                if (golem.x < santa.x + santa.width &&
+                    golem.x + golem.width > santa.x &&
+                    golem.y < santa.y + santa.height &&
+                    golem.y + golem.height > santa.y) {
+                    santa.health--;
+                    createParticles(golem.x, golem.y + 50, '#ff0000', 20);
+                    // Golem wird nicht zerstört bei Kollision - zu stark!
+
+                    if (santa.health <= 0) {
+                        gameOver();
+                    }
+                }
+
+                // Kollision mit Schneekugeln
+                for (let j = snowballs.length - 1; j >= 0; j--) {
+                    const ball = snowballs[j];
+                    const dx = ball.x - golem.x;
+                    const dy = ball.y - (golem.y + 40);
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < ball.radius + 40) {
+                        golem.health--;
+                        createParticles(ball.x, ball.y, '#ffffff', 15);
+                        snowballs.splice(j, 1);
+
+                        if (golem.health <= 0) {
+                            // Golem besiegt - große Explosion!
+                            createParticles(golem.x, golem.y + 50, '#ffffff', 40);
+                            createConfetti(golem.x, golem.y + 50, 50);
+                            golems.splice(i, 1);
+                            score += 50;
+                            document.getElementById('score').textContent = score;
+                        }
+                        break;
+                    }
+                }
+            }
+
             // Update Rentiere
             for (let i = reindeer.length - 1; i >= 0; i--) {
                 const deer = reindeer[i];
@@ -871,6 +1070,15 @@
                     reindeerSpawnInterval -= 1;
                 }
             }
+
+            // Spawne Golems (alle 10-15 Sekunden)
+            golemSpawnTimer++;
+            if (golemSpawnTimer >= golemSpawnInterval) {
+                spawnGolem();
+                golemSpawnTimer = 0;
+                // Zufälliges nächstes Intervall
+                golemSpawnInterval = 600 + Math.floor(Math.random() * 300);
+            }
         }
 
         // Zeichne alles
@@ -937,6 +1145,9 @@
             // Schneemänner
             snowmen.forEach(drawSnowman);
 
+            // Golems (größer, darüber)
+            golems.forEach(drawGolem);
+
             // Schneekugeln
             snowballs.forEach(drawSnowball);
 
@@ -997,10 +1208,13 @@
             particles.length = 0;
             reindeer.length = 0;
             gifts.length = 0;
+            golems.length = 0;
             snowmanSpawnTimer = 0;
             snowmanSpawnInterval = 120;
             reindeerSpawnTimer = 0;
             reindeerSpawnInterval = 200;
+            golemSpawnTimer = 0;
+            golemSpawnInterval = 600 + Math.floor(Math.random() * 300);
             document.getElementById('score').textContent = score;
             document.getElementById('gameOver').style.display = 'none';
         }
