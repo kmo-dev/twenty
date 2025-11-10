@@ -558,22 +558,22 @@
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 3;
 
-            // Beine als Schneekugeln (Walking Animation - abwechselnd)
-            const leftLegPhase = Math.sin(golem.walkPhase);
-            const rightLegPhase = Math.sin(golem.walkPhase + Math.PI); // Versetzt
+            // Beine als Schneekugeln (einfache Hüpf-Animation)
+            // Zwei Füße an festen Positionen, einer hüpft über den anderen
+            const hopPhase = Math.sin(golem.walkPhase);
 
-            // Linkes Bein (Kugel)
-            const leftLegY = drawY + 65 - Math.abs(leftLegPhase) * 8; // Hüpft hoch und runter
-            const leftLegX = golem.x - 12 + leftLegPhase * 6; // Bewegt sich vor und zurück
+            // Linkes Bein (Kugel) - hüpft wenn Phase positiv
+            const leftLegY = drawY + 75 - (hopPhase > 0 ? hopPhase * 15 : 0);
+            const leftLegX = golem.x - 15;
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.arc(leftLegX, leftLegY, 14, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
-            // Rechtes Bein (Kugel)
-            const rightLegY = drawY + 65 - Math.abs(rightLegPhase) * 8;
-            const rightLegX = golem.x + 12 + rightLegPhase * 6;
+            // Rechtes Bein (Kugel) - hüpft wenn Phase negativ
+            const rightLegY = drawY + 75 - (hopPhase < 0 ? -hopPhase * 15 : 0);
+            const rightLegX = golem.x + 15;
             ctx.beginPath();
             ctx.arc(rightLegX, rightLegY, 14, 0, Math.PI * 2);
             ctx.fill();
@@ -701,7 +701,7 @@
         function spawnGolem() {
             golems.push({
                 x: canvas.width + 100,
-                y: canvas.height - 180,  // Auf Bodenhöhe
+                y: canvas.height - 140,  // Näher am Boden
                 width: 80,
                 height: 110,
                 speed: 1 + Math.random() * 0.5,  // Langsamer als Schneemänner
