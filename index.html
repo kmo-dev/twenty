@@ -218,11 +218,11 @@
         // Three.js Setup
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
-        scene.fog = new THREE.Fog(0x87CEEB, 10, 100);
+        scene.fog = new THREE.Fog(0x87CEEB, 10, 50);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(-5, 5, 15);
-        camera.lookAt(0, 2, 0);
+        camera.position.set(0, 3, 20); // Sidescroller perspective from front
+        camera.lookAt(0, 3, 0);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         const maxWidth = Math.min(window.innerWidth - 40, 1200);
@@ -237,7 +237,7 @@
         scene.add(ambientLight);
 
         const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(10, 20, 10);
+        directionalLight.position.set(5, 20, 25);
         directionalLight.castShadow = true;
         directionalLight.shadow.camera.left = -30;
         directionalLight.shadow.camera.right = 30;
@@ -248,10 +248,11 @@
         scene.add(directionalLight);
 
         // Boden
-        const groundGeometry = new THREE.PlaneGeometry(200, 100);
+        const groundGeometry = new THREE.PlaneGeometry(100, 50);
         const groundMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
         const ground = new THREE.Mesh(groundGeometry, groundMaterial);
         ground.rotation.x = -Math.PI / 2;
+        ground.position.y = 0;
         ground.receiveShadow = true;
         scene.add(ground);
 
@@ -322,7 +323,8 @@
             gun.castShadow = true;
             santa.add(gun);
 
-            santa.position.set(-8, 1.5, 0);
+            santa.position.set(-10, 1.5, 0);
+            santa.rotation.y = Math.PI / 2; // Rotate to face right
             santa.userData = {
                 velocityY: 0,
                 isJumping: false,
@@ -387,10 +389,13 @@
                 snowman.add(button);
             }
 
-            snowman.position.set(20, 1, 0);
+            snowman.position.set(15, 1, 0);
+            snowman.rotation.y = -Math.PI / 2; // Rotate to face left
             snowman.userData = {
                 speed: 0.1 + Math.random() * 0.05,
-                health: 1
+                health: 1,
+                jumpPhase: Math.random() * Math.PI * 2, // Random start phase for jumping
+                baseY: 1
             };
 
             return snowman;
@@ -446,7 +451,7 @@
             snowflake.position.set(
                 Math.random() * 40 - 20,
                 10 + Math.random() * 5,
-                Math.random() * 20 - 10
+                Math.random() * 15 - 5  // Closer to camera for sidescroller
             );
 
             snowflake.userData = {
@@ -496,7 +501,7 @@
         for (let i = 0; i < 15; i++) {
             const tree = createTree(
                 Math.random() * 40 - 20,
-                -5 - Math.random() * 10
+                -10 - Math.random() * 5  // Behind the action (negative Z)
             );
             trees.push(tree);
             scene.add(tree);
@@ -520,16 +525,23 @@
         function shootSnowball() {
             if (shootCooldown > 0 || !gameRunning) return;
 
-            // Richtung berechnen (Maus in 3D-Welt)
-            const vector = new THREE.Vector3(mouseX, mouseY, 0.5);
+            // Convert mouse position to 3D world position in sidescroller plane
+            const vector = new THREE.Vector3(mouseX, mouseY, 0);
             vector.unproject(camera);
-            const dir = vector.sub(camera.position).normalize();
 
-            // Von Waffe Position
+            // Direction from santa to mouse position (only in X-Y plane, Z stays at 0)
             const gunWorldPos = new THREE.Vector3();
             santa.userData.gun.getWorldPosition(gunWorldPos);
 
-            const snowball = createSnowball(gunWorldPos, dir);
+            const targetPos = new THREE.Vector3(vector.x, vector.y, 0);
+            const dir = new THREE.Vector3()
+                .subVectors(targetPos, new THREE.Vector3(santa.position.x, santa.position.y + 1.2, 0))
+                .normalize();
+
+            const snowball = createSnowball(
+                new THREE.Vector3(santa.position.x + dir.x * 0.5, santa.position.y + 1.2, 0),
+                dir
+            );
             snowballs.push(snowball);
             scene.add(snowball);
 
@@ -561,12 +573,16 @@
                 santa.userData.isJumping = false;
             }
 
-            // Waffe zum Mauszeiger ausrichten
-            const vector = new THREE.Vector3(mouseX, mouseY, 0.5);
+            // Waffe zum Mauszeiger ausrichten (in 2D sidescroller plane)
+            const vector = new THREE.Vector3(mouseX, mouseY, 0);
             vector.unproject(camera);
-            const dir = vector.sub(santa.position).normalize();
-            const angle = Math.atan2(dir.z, dir.x);
-            santa.userData.gun.rotation.set(0, 0, Math.PI / 2 - angle);
+            const dir = new THREE.Vector3()
+                .subVectors(new THREE.Vector3(vector.x, vector.y, 0), santa.position)
+                .normalize();
+
+            // Calculate angle in X-Y plane (sidescroller)
+            const angle = Math.atan2(dir.y, dir.x);
+            santa.userData.gun.rotation.set(0, 0, angle);
 
             // Update Schneekugeln
             for (let i = snowballs.length - 1; i >= 0; i--) {
@@ -587,16 +603,24 @@
                 const snowman = snowmen[i];
                 snowman.position.x -= snowman.userData.speed;
 
+                // Hüpf-Animation
+                snowman.userData.jumpPhase += 0.15;
+                const jumpHeight = Math.abs(Math.sin(snowman.userData.jumpPhase)) * 0.4;
+                snowman.position.y = snowman.userData.baseY + jumpHeight;
+
                 // Entferne wenn zu weit links
-                if (snowman.position.x < -20) {
+                if (snowman.position.x < -15) {
                     scene.remove(snowman);
                     snowmen.splice(i, 1);
                     continue;
                 }
 
-                // Kollision mit Santa
-                const distance = santa.position.distanceTo(snowman.position);
-                if (distance < 2) {
+                // Kollision mit Santa (2D distance in X-Y plane)
+                const dx = santa.position.x - snowman.position.x;
+                const dy = santa.position.y - snowman.position.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 1.5) {
                     santa.userData.health--;
                     particles.push(...createParticles(snowman.position, 0xff0000, 15));
                     scene.remove(snowman);
@@ -608,12 +632,14 @@
                     continue;
                 }
 
-                // Kollision mit Schneekugeln
+                // Kollision mit Schneekugeln (2D distance)
                 for (let j = snowballs.length - 1; j >= 0; j--) {
                     const ball = snowballs[j];
-                    const ballDistance = ball.position.distanceTo(snowman.position);
+                    const bdx = ball.position.x - snowman.position.x;
+                    const bdy = ball.position.y - snowman.position.y;
+                    const ballDistance = Math.sqrt(bdx * bdx + bdy * bdy);
 
-                    if (ballDistance < 1) {
+                    if (ballDistance < 0.8) {
                         particles.push(...createParticles(snowman.position, 0xffffff, 20));
                         scene.remove(snowman);
                         scene.remove(ball);
@@ -635,7 +661,7 @@
                 if (flake.position.y < 0) {
                     flake.position.y = 15;
                     flake.position.x = Math.random() * 40 - 20;
-                    flake.position.z = Math.random() * 20 - 10;
+                    flake.position.z = Math.random() * 15 - 5;
                 }
             });
 
@@ -695,7 +721,7 @@
             gameRunning = true;
             score = 0;
             santa.userData.health = santa.userData.maxHealth;
-            santa.position.set(-8, 1.5, 0);
+            santa.position.set(-10, 1.5, 0);
             santa.userData.velocityY = 0;
 
             // Entferne alle Objekte
