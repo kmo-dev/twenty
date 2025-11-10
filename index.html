@@ -1031,21 +1031,48 @@
             ctx.stroke();
 
             // Arme (dick und rund mit Schwing-Animation von der Schulter)
-            const armSwing = Math.sin(gingerbread.walkPhase) * 0.6; // Stärkere Rotation
+            const armSwing = Math.sin(gingerbread.walkPhase) * 0.4; // Rotation
 
-            // Linker Arm (schwingt entgegengesetzt zu rechtem Bein, rotiert von Schulter)
-            const leftArmY = drawY + 10;
+            // Linker Arm (rotiert von Schulter aus)
+            ctx.save();
+            ctx.translate(gingerbread.x - 70, drawY - 50); // Schulterposition
+            ctx.rotate(-0.3 - armSwing); // Rotation von Schulter
             ctx.beginPath();
-            ctx.ellipse(gingerbread.x - 85, leftArmY, 20, 50, -0.3 - armSwing, 0, Math.PI * 2);
+            ctx.ellipse(0, 40, 20, 50, 0, 0, Math.PI * 2); // Arm hängt nach unten von Schulter
             ctx.fill();
             ctx.stroke();
 
-            // Rechter Arm (schwingt entgegengesetzt zu linkem Bein, rotiert von Schulter)
-            const rightArmY = drawY + 10;
+            // Zuckerguss-Knopf auf linkem Arm
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#cccccc';
+            ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.ellipse(gingerbread.x + 85, rightArmY, 20, 50, 0.3 + armSwing, 0, Math.PI * 2);
+            ctx.arc(0, 40, 6, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
+            ctx.restore();
+
+            // Rechter Arm (rotiert von Schulter aus)
+            ctx.save();
+            ctx.translate(gingerbread.x + 70, drawY - 50); // Schulterposition
+            ctx.rotate(0.3 + armSwing); // Rotation von Schulter
+            ctx.fillStyle = '#8B4513';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.ellipse(0, 40, 20, 50, 0, 0, Math.PI * 2); // Arm hängt nach unten von Schulter
+            ctx.fill();
+            ctx.stroke();
+
+            // Zuckerguss-Knopf auf rechtem Arm
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#cccccc';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 40, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
 
             // Zuckerguss-Dekoration (weiß)
             ctx.fillStyle = '#ffffff';
@@ -1106,21 +1133,6 @@
             ctx.lineTo(gingerbread.x + 6, drawY - 72);
             ctx.lineTo(gingerbread.x + 12, drawY - 68);
             ctx.lineTo(gingerbread.x + 18, drawY - 72);
-            ctx.stroke();
-
-            // Zuckerguss-Knöpfe auf Armen
-            ctx.fillStyle = '#ffffff';
-            ctx.strokeStyle = '#cccccc';
-            ctx.lineWidth = 2;
-            // Linker Arm
-            ctx.beginPath();
-            ctx.arc(gingerbread.x - 85, leftArmY, 6, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-            // Rechter Arm
-            ctx.beginPath();
-            ctx.arc(gingerbread.x + 85, rightArmY, 6, 0, Math.PI * 2);
-            ctx.fill();
             ctx.stroke();
 
             // Health Bar über dem Kopf
