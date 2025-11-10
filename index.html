@@ -741,85 +741,96 @@
             // Rückstoß-Offset
             const recoilX = cannon.recoilOffset || 0;
 
-            // Rentier vorne (zieht die Kanone)
-            const deerX = cannon.x - 80 + recoilX;
-            const deerY = cannon.y + 30;
+            // Rentier vorne (zieht die Kanone) - mehr Abstand
+            const deerX = cannon.x - 160 + recoilX;
+            const deerY = cannon.y + 40;
 
-            // Rentier Körper (braun)
+            // Rentier Körper (braun) - größer
             ctx.fillStyle = '#8B4513';
-            ctx.fillRect(deerX, deerY, 50, 25);
+            ctx.fillRect(deerX, deerY, 60, 30);
 
             // Kopf
-            ctx.fillRect(deerX - 20, deerY + 5, 25, 20);
+            ctx.fillRect(deerX - 25, deerY + 8, 30, 24);
 
-            // Geweih
+            // Geweih (größer)
             ctx.strokeStyle = '#654321';
             ctx.lineWidth = 4;
             ctx.beginPath();
-            ctx.moveTo(deerX - 10, deerY + 5);
-            ctx.lineTo(deerX - 15, deerY - 15);
-            ctx.moveTo(deerX - 5, deerY + 5);
-            ctx.lineTo(deerX - 10, deerY - 10);
-            ctx.moveTo(deerX + 5, deerY + 5);
-            ctx.lineTo(deerX, deerY - 10);
+            ctx.moveTo(deerX - 12, deerY + 8);
+            ctx.lineTo(deerX - 18, deerY - 18);
+            ctx.moveTo(deerX - 6, deerY + 8);
+            ctx.lineTo(deerX - 12, deerY - 12);
+            ctx.moveTo(deerX + 6, deerY + 8);
+            ctx.lineTo(deerX, deerY - 12);
             ctx.stroke();
 
             // Nase (rot - Rudolph!)
             ctx.fillStyle = '#ff0000';
             ctx.beginPath();
-            ctx.arc(deerX - 20, deerY + 15, 4, 0, Math.PI * 2);
+            ctx.arc(deerX - 25, deerY + 20, 5, 0, Math.PI * 2);
             ctx.fill();
 
             // Beine
             ctx.fillStyle = '#8B4513';
-            ctx.fillRect(deerX + 5, deerY + 25, 6, 15);
-            ctx.fillRect(deerX + 30, deerY + 25, 6, 15);
+            ctx.fillRect(deerX + 8, deerY + 30, 7, 18);
+            ctx.fillRect(deerX + 38, deerY + 30, 7, 18);
 
-            // Seil zum Kanone
+            // Seil zur Kanone
             ctx.strokeStyle = '#654321';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 4;
             ctx.beginPath();
-            ctx.moveTo(deerX + 50, deerY + 12);
-            ctx.lineTo(cannon.x - 30 + recoilX, cannon.y + 35);
+            ctx.moveTo(deerX + 60, deerY + 15);
+            ctx.lineTo(cannon.x - 60 + recoilX, cannon.y + 55);
             ctx.stroke();
 
-            // Kanone (große Tanne als Kanone)
+            // Kanone (größer und rotiert)
             const cannonX = cannon.x + recoilX;
+            const cannonAngle = -Math.PI / 6; // -30 Grad (nach links oben)
 
-            // Kanonen-Basis (Holz)
+            // Kanonen-Basis (Holz) - größer
             ctx.fillStyle = '#654321';
-            ctx.fillRect(cannonX - 30, cannon.y + 25, 80, 30);
+            ctx.fillRect(cannonX - 50, cannon.y + 40, 120, 40);
 
-            // Räder
+            // Räder (größer)
             ctx.fillStyle = '#2d1810';
             ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
             ctx.beginPath();
-            ctx.arc(cannonX - 15, cannon.y + 55, 10, 0, Math.PI * 2);
+            ctx.arc(cannonX - 30, cannon.y + 80, 14, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
             ctx.beginPath();
-            ctx.arc(cannonX + 35, cannon.y + 55, 10, 0, Math.PI * 2);
+            ctx.arc(cannonX + 50, cannon.y + 80, 14, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
-            // Kanonen-Rohr (horizontal)
+            // Kanonen-Rohr (rotiert, größer)
+            ctx.save();
+            ctx.translate(cannonX + 10, cannon.y + 50);
+            ctx.rotate(cannonAngle);
+
+            // Rohr (länger und dicker)
             ctx.fillStyle = '#2d3748';
-            ctx.fillRect(cannonX, cannon.y + 30, 70, 20);
+            ctx.fillRect(-10, -15, 100, 30);
 
             // Kanonenmündung
             ctx.fillStyle = '#1a202c';
-            ctx.fillRect(cannonX + 70, cannon.y + 25, 10, 30);
+            ctx.fillRect(90, -20, 15, 40);
 
-            // Verzierung (Metallring)
+            // Verzierung (Metallringe)
             ctx.strokeStyle = '#4a5568';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 4;
             ctx.beginPath();
-            ctx.arc(cannonX + 35, cannon.y + 40, 12, 0, Math.PI * 2);
+            ctx.arc(25, 0, 18, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(60, 0, 18, 0, Math.PI * 2);
             ctx.stroke();
 
+            ctx.restore();
+
             // Health Bar über der Kanone
-            const barWidth = 80;
+            const barWidth = 100;
             const barHeight = 8;
             const healthPercent = cannon.health / cannon.maxHealth;
 
@@ -842,10 +853,10 @@
         // Spawne Baum-Kanone
         function spawnTreeCannon() {
             treeCannons.push({
-                x: canvas.width + 150,
-                y: canvas.height - 160,
-                width: 150,
-                height: 80,
+                x: canvas.width + 200,
+                y: canvas.height - 180,
+                width: 200,
+                height: 100,
                 speed: 0.5,
                 health: 10,
                 maxHealth: 10,
@@ -1152,38 +1163,45 @@
                 // Schießen
                 cannon.shootTimer--;
                 if (cannon.shootTimer <= 0 && cannon.x > 0 && cannon.x < canvas.width - 100) {
-                    // Tannenbaum schießen
+                    // Berechne Mündungsposition (Kanone ist -30° rotiert)
+                    const cannonAngle = -Math.PI / 6; // -30 Grad
+                    const barrelLength = 100;
+                    const muzzleX = cannon.x + 10 + barrelLength * Math.cos(cannonAngle);
+                    const muzzleY = cannon.y + 50 + barrelLength * Math.sin(cannonAngle);
+
+                    // Tannenbaum schießen (in Richtung der Kanone: nach links oben)
+                    const speed = 10;
                     flyingTrees.push({
-                        x: cannon.x + 80,
-                        y: cannon.y + 40,
-                        vx: -8,
-                        vy: -2 + Math.random() * -2,
-                        rotation: 0,
+                        x: muzzleX,
+                        y: muzzleY,
+                        vx: -speed * Math.cos(Math.PI / 6),  // nach links: ca. -8.66
+                        vy: -speed * Math.sin(Math.PI / 6),  // nach oben: ca. -5
+                        rotation: Math.PI / 4,  // Anfangsrotation
                         rotationSpeed: 0.15
                     });
 
                     // Rückstoß!
-                    cannon.recoilOffset = 15;
+                    cannon.recoilOffset = 20;
 
-                    // Nadel-Konfetti beim Schuss!
-                    createNeedleConfetti(cannon.x + 80, cannon.y + 40, 25);
+                    // Nadel-Konfetti beim Schuss aus der Mündung!
+                    createNeedleConfetti(muzzleX, muzzleY, 25);
 
                     cannon.shootTimer = 90 + Math.floor(Math.random() * 60);
                 }
 
                 // Entferne wenn zu weit links
-                if (cannon.x < -200) {
+                if (cannon.x < -250) {
                     treeCannons.splice(i, 1);
                     continue;
                 }
 
                 // Kollision mit Santa
-                if (cannon.x < santa.x + santa.width + 50 &&
+                if (cannon.x < santa.x + santa.width + 70 &&
                     cannon.x + cannon.width > santa.x &&
                     cannon.y < santa.y + santa.height &&
                     cannon.y + cannon.height > santa.y) {
                     santa.health--;
-                    createNeedleConfetti(cannon.x, cannon.y + 40, 30);
+                    createNeedleConfetti(cannon.x, cannon.y + 60, 30);
                     // Kanone wird nicht zerstört bei Kollision
 
                     if (santa.health <= 0) {
@@ -1195,18 +1213,18 @@
                 for (let j = snowballs.length - 1; j >= 0; j--) {
                     const ball = snowballs[j];
                     const dx = ball.x - cannon.x;
-                    const dy = ball.y - (cannon.y + 40);
+                    const dy = ball.y - (cannon.y + 60);
                     const distance = Math.sqrt(dx * dx + dy * dy);
 
-                    if (distance < ball.radius + 50) {
+                    if (distance < ball.radius + 60) {
                         cannon.health--;
                         createParticles(ball.x, ball.y, '#ffffff', 15);
                         snowballs.splice(j, 1);
 
                         if (cannon.health <= 0) {
                             // Kanone zerstört - große Nadel-Explosion!
-                            createNeedleConfetti(cannon.x, cannon.y + 40, 60);
-                            createParticles(cannon.x, cannon.y + 40, '#654321', 30);
+                            createNeedleConfetti(cannon.x, cannon.y + 60, 60);
+                            createParticles(cannon.x, cannon.y + 60, '#654321', 30);
                             treeCannons.splice(i, 1);
                             score += 100;
                             document.getElementById('score').textContent = score;
