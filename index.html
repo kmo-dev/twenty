@@ -250,10 +250,14 @@
         const snowmen = [];
         const particles = [];
         const snowflakes = [];
+        const reindeer = [];
+        const gifts = [];
 
         // Spawn Timer
         let snowmanSpawnTimer = 0;
         let snowmanSpawnInterval = 120; // Frames
+        let reindeerSpawnTimer = 0;
+        let reindeerSpawnInterval = 200; // Frames
         let shootCooldown = 0;
 
         // Hintergrund Elemente
@@ -515,7 +519,7 @@
         function spawnSnowman() {
             snowmen.push({
                 x: canvas.width + 50,
-                y: canvas.height - 150,
+                y: canvas.height - 120,  // Auf Bodenhöhe
                 width: 40,
                 height: 50,
                 speed: 2 + Math.random() * 1.5,
@@ -523,6 +527,118 @@
                 jumpPhase: Math.random() * Math.PI * 2,
                 jumpOffset: 0
             });
+        }
+
+        // Zeichne Rentier
+        function drawReindeer(deer) {
+            ctx.save();
+
+            // Körper (braun)
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(deer.x, deer.y, 40, 20);
+
+            // Kopf
+            ctx.fillRect(deer.x - 15, deer.y + 5, 20, 15);
+
+            // Geweih
+            ctx.strokeStyle = '#654321';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(deer.x - 10, deer.y + 5);
+            ctx.lineTo(deer.x - 15, deer.y - 10);
+            ctx.moveTo(deer.x - 5, deer.y + 5);
+            ctx.lineTo(deer.x - 10, deer.y - 8);
+            ctx.stroke();
+
+            // Nase (rot)
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(deer.x - 15, deer.y + 12, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Beine
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(deer.x + 5, deer.y + 20, 5, 10);
+            ctx.fillRect(deer.x + 20, deer.y + 20, 5, 10);
+
+            // Schlitten
+            ctx.fillStyle = '#c41e3a';
+            ctx.fillRect(deer.x + 50, deer.y + 5, 30, 20);
+            ctx.fillStyle = '#654321';
+            ctx.beginPath();
+            ctx.arc(deer.x + 55, deer.y + 25, 5, 0, Math.PI * 2);
+            ctx.arc(deer.x + 75, deer.y + 25, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Geschenk im Schlitten
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(deer.x + 58, deer.y + 10, 15, 12);
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(deer.x + 58, deer.y + 16);
+            ctx.lineTo(deer.x + 73, deer.y + 16);
+            ctx.moveTo(deer.x + 65.5, deer.y + 10);
+            ctx.lineTo(deer.x + 65.5, deer.y + 22);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Zeichne Geschenk
+        function drawGift(gift) {
+            ctx.save();
+
+            // Geschenk Box
+            ctx.fillStyle = gift.color;
+            ctx.fillRect(gift.x - 10, gift.y - 10, 20, 20);
+
+            // Schleife
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(gift.x - 10, gift.y);
+            ctx.lineTo(gift.x + 10, gift.y);
+            ctx.moveTo(gift.x, gift.y - 10);
+            ctx.lineTo(gift.x, gift.y + 10);
+            ctx.stroke();
+
+            // Schleife oben
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(gift.x - 5, gift.y - 12, 4, 0, Math.PI * 2);
+            ctx.arc(gift.x + 5, gift.y - 12, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // Spawne Rentier
+        function spawnReindeer() {
+            reindeer.push({
+                x: canvas.width + 100,
+                y: 50 + Math.random() * 100,
+                speed: 1 + Math.random() * 0.5,
+                dropTimer: 60 + Math.floor(Math.random() * 60)
+            });
+        }
+
+        // Erstelle Konfetti
+        function createConfetti(x, y, count = 30) {
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500', '#ff69b4'];
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8 - 2,
+                    life: 60,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    size: Math.random() * 5 + 2,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.2
+                });
+            }
         }
 
         // Update Spiel
@@ -608,6 +724,104 @@
                 }
             }
 
+            // Update Rentiere
+            for (let i = reindeer.length - 1; i >= 0; i--) {
+                const deer = reindeer[i];
+                deer.x -= deer.speed;
+
+                // Leichte Auf-und-Ab-Bewegung
+                deer.y += Math.sin(Date.now() / 200 + i) * 0.5;
+
+                // Geschenk abwerfen
+                deer.dropTimer--;
+                if (deer.dropTimer <= 0 && deer.x > 0 && deer.x < canvas.width - 100) {
+                    const colors = ['#ffd700', '#ff69b4', '#00ffff', '#00ff00'];
+                    gifts.push({
+                        x: deer.x + 65,
+                        y: deer.y + 20,
+                        vy: 0,
+                        gravity: 0.3,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        rotation: 0
+                    });
+                    deer.dropTimer = 80 + Math.floor(Math.random() * 60);
+                }
+
+                // Entferne wenn zu weit links
+                if (deer.x < -150) {
+                    reindeer.splice(i, 1);
+                    continue;
+                }
+
+                // Kollision mit Schneekugeln
+                for (let j = snowballs.length - 1; j >= 0; j--) {
+                    const ball = snowballs[j];
+                    const dx = ball.x - deer.x;
+                    const dy = ball.y - deer.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < ball.radius + 30) {
+                        createParticles(deer.x, deer.y, '#8B4513', 20);
+                        reindeer.splice(i, 1);
+                        snowballs.splice(j, 1);
+                        score += 20;
+                        document.getElementById('score').textContent = score;
+                        break;
+                    }
+                }
+            }
+
+            // Update Geschenke
+            for (let i = gifts.length - 1; i >= 0; i--) {
+                const gift = gifts[i];
+                gift.vy += gift.gravity;
+                gift.y += gift.vy;
+                gift.rotation += 0.1;
+
+                // Entferne wenn zu weit unten
+                if (gift.y > canvas.height + 50) {
+                    gifts.splice(i, 1);
+                    continue;
+                }
+
+                // Kollision mit Boden - Konfetti!
+                if (gift.y >= canvas.height - 100) {
+                    createConfetti(gift.x, gift.y, 30);
+                    gifts.splice(i, 1);
+                    continue;
+                }
+
+                // Kollision mit Santa
+                if (gift.x > santa.x && gift.x < santa.x + santa.width &&
+                    gift.y > santa.y && gift.y < santa.y + santa.height) {
+                    santa.health--;
+                    createConfetti(gift.x, gift.y, 30);
+                    gifts.splice(i, 1);
+
+                    if (santa.health <= 0) {
+                        gameOver();
+                    }
+                    continue;
+                }
+
+                // Kollision mit Schneekugeln - auch Konfetti!
+                for (let j = snowballs.length - 1; j >= 0; j--) {
+                    const ball = snowballs[j];
+                    const dx = ball.x - gift.x;
+                    const dy = ball.y - gift.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < ball.radius + 15) {
+                        createConfetti(gift.x, gift.y, 25);
+                        gifts.splice(i, 1);
+                        snowballs.splice(j, 1);
+                        score += 5;
+                        document.getElementById('score').textContent = score;
+                        break;
+                    }
+                }
+            }
+
             // Update Schneeflocken (fallen gerade nach unten)
             snowflakes.forEach(flake => {
                 flake.y += flake.speed;
@@ -625,6 +839,10 @@
                 const p = particles[i];
                 p.x += p.vx;
                 p.y += p.vy;
+                p.vy += 0.1; // Gravität für Konfetti
+                if (p.rotation !== undefined) {
+                    p.rotation += p.rotationSpeed;
+                }
                 p.life--;
 
                 if (p.life <= 0) {
@@ -640,6 +858,17 @@
                 // Erhöhe Schwierigkeit
                 if (snowmanSpawnInterval > 60) {
                     snowmanSpawnInterval -= 1;
+                }
+            }
+
+            // Spawne Rentiere
+            reindeerSpawnTimer++;
+            if (reindeerSpawnTimer >= reindeerSpawnInterval) {
+                spawnReindeer();
+                reindeerSpawnTimer = 0;
+                // Erhöhe Schwierigkeit
+                if (reindeerSpawnInterval > 150) {
+                    reindeerSpawnInterval -= 1;
                 }
             }
         }
@@ -670,14 +899,39 @@
                 ctx.fill();
             });
 
-            // Partikel
+            // Rentiere (im Hintergrund)
+            reindeer.forEach(drawReindeer);
+
+            // Geschenke
+            gifts.forEach(gift => {
+                ctx.save();
+                ctx.translate(gift.x, gift.y);
+                ctx.rotate(gift.rotation);
+                ctx.translate(-gift.x, -gift.y);
+                drawGift(gift);
+                ctx.restore();
+            });
+
+            // Partikel / Konfetti
             particles.forEach(p => {
+                ctx.save();
                 ctx.fillStyle = p.color;
                 ctx.globalAlpha = p.life / 60;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fill();
+
+                if (p.rotation !== undefined) {
+                    // Konfetti mit Rotation
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation);
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                } else {
+                    // Normale Partikel (rund)
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
                 ctx.globalAlpha = 1;
+                ctx.restore();
             });
 
             // Schneemänner
@@ -741,8 +995,12 @@
             snowballs.length = 0;
             snowmen.length = 0;
             particles.length = 0;
+            reindeer.length = 0;
+            gifts.length = 0;
             snowmanSpawnTimer = 0;
             snowmanSpawnInterval = 120;
+            reindeerSpawnTimer = 0;
+            reindeerSpawnInterval = 200;
             document.getElementById('score').textContent = score;
             document.getElementById('gameOver').style.display = 'none';
         }
