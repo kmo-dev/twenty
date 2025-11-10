@@ -741,9 +741,48 @@
             // Rückstoß-Offset
             const recoilX = cannon.recoilOffset || 0;
 
-            // Kanone (größer und nach rechts rotiert)
+            // Fallschirm (wenn noch nicht gelandet)
+            if (!cannon.landed) {
+                const parachuteX = cannon.x;
+                const parachuteY = cannon.y - 80;
+
+                // Seile
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(parachuteX - 40, parachuteY + 30);
+                ctx.lineTo(cannon.x - 30, cannon.y + 40);
+                ctx.moveTo(parachuteX - 20, parachuteY + 30);
+                ctx.lineTo(cannon.x - 10, cannon.y + 40);
+                ctx.moveTo(parachuteX + 20, parachuteY + 30);
+                ctx.lineTo(cannon.x + 10, cannon.y + 40);
+                ctx.moveTo(parachuteX + 40, parachuteY + 30);
+                ctx.lineTo(cannon.x + 30, cannon.y + 40);
+                ctx.stroke();
+
+                // Fallschirm Kappe (rot/weiß gestreift)
+                for (let i = 0; i < 6; i++) {
+                    ctx.fillStyle = i % 2 === 0 ? '#ff0000' : '#ffffff';
+                    ctx.beginPath();
+                    ctx.moveTo(parachuteX, parachuteY);
+                    ctx.arc(parachuteX, parachuteY + 10, 50,
+                            Math.PI + (i * Math.PI / 3),
+                            Math.PI + ((i + 1) * Math.PI / 3));
+                    ctx.lineTo(parachuteX, parachuteY);
+                    ctx.fill();
+                }
+
+                // Fallschirm Umriss
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(parachuteX, parachuteY + 10, 50, Math.PI, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Kanone (größer und nach LINKS rotiert)
             const cannonX = cannon.x + recoilX;
-            const cannonAngle = Math.PI / 6; // +30 Grad (nach rechts oben)
+            const cannonAngle = -Math.PI / 6; // -30 Grad (nach LINKS oben)
 
             // Kanonen-Basis (Holz) - größer
             ctx.fillStyle = '#654321';
@@ -762,7 +801,7 @@
             ctx.fill();
             ctx.stroke();
 
-            // Kanonen-Rohr (rotiert nach rechts oben)
+            // Kanonen-Rohr (rotiert nach LINKS oben)
             ctx.save();
             ctx.translate(cannonX + 10, cannon.y + 50);
             ctx.rotate(cannonAngle);
@@ -811,14 +850,16 @@
         // Spawne Baum-Kanone
         function spawnTreeCannon() {
             treeCannons.push({
-                x: canvas.width - 200,  // Erscheint rechts im Bild
-                y: canvas.height - 180,
+                x: canvas.width - 200,  // Rechts im Bild
+                y: -150,  // Startet oben außerhalb des Bildschirms
                 width: 200,
                 height: 100,
-                speed: 0,  // Bewegt sich nicht - steht fest
+                fallSpeed: 1.5,  // Langsamer Fall mit Fallschirm
+                landed: false,  // Noch nicht gelandet
+                groundY: canvas.height - 180,  // Ziel-Y-Position am Boden
                 health: 10,
                 maxHealth: 10,
-                shootTimer: 120 + Math.floor(Math.random() * 60),
+                shootTimer: 60 + Math.floor(Math.random() * 40),  // Schießt schnell
                 recoilOffset: 0
             });
         }
@@ -1110,41 +1151,50 @@
             // Update Baum-Kanonen
             for (let i = treeCannons.length - 1; i >= 0; i--) {
                 const cannon = treeCannons[i];
-                cannon.x -= cannon.speed;
 
-                // Rückstoß-Animation
-                if (cannon.recoilOffset < 0) {
-                    cannon.recoilOffset += 2;
-                    if (cannon.recoilOffset > 0) cannon.recoilOffset = 0;
+                // Fall-Animation (mit Fallschirm)
+                if (!cannon.landed) {
+                    cannon.y += cannon.fallSpeed;
+                    // Landen wenn Boden erreicht
+                    if (cannon.y >= cannon.groundY) {
+                        cannon.y = cannon.groundY;
+                        cannon.landed = true;
+                    }
                 }
 
-                // Schießen
+                // Rückstoß-Animation
+                if (cannon.recoilOffset > 0) {
+                    cannon.recoilOffset -= 2;
+                    if (cannon.recoilOffset < 0) cannon.recoilOffset = 0;
+                }
+
+                // Schießen (auch während des Fallens!)
                 cannon.shootTimer--;
                 if (cannon.shootTimer <= 0) {
-                    // Berechne Mündungsposition (Kanone ist +30° rotiert)
-                    const cannonAngle = Math.PI / 6; // +30 Grad
+                    // Berechne Mündungsposition (Kanone ist -30° rotiert = nach LINKS)
+                    const cannonAngle = -Math.PI / 6; // -30 Grad (nach links oben)
                     const barrelLength = 100;
                     const muzzleX = cannon.x + 10 + barrelLength * Math.cos(cannonAngle);
                     const muzzleY = cannon.y + 50 + barrelLength * Math.sin(cannonAngle);
 
-                    // Tannenbaum schießen (nach rechts unten, auf Santa zu)
+                    // Tannenbaum schießen (nach LINKS, auf Santa zu)
                     const speed = 10;
                     flyingTrees.push({
                         x: muzzleX,
                         y: muzzleY,
-                        vx: speed * Math.cos(Math.PI / 6),   // nach rechts: ca. +8.66
-                        vy: speed * Math.sin(Math.PI / 6),   // nach unten: ca. +5
-                        rotation: -Math.PI / 4,  // Anfangsrotation (spiegelt)
+                        vx: -speed * Math.cos(Math.PI / 6),   // nach links: ca. -8.66
+                        vy: -speed * Math.sin(Math.PI / 6),   // leicht nach oben: ca. -5
+                        rotation: Math.PI / 4,  // Anfangsrotation
                         rotationSpeed: 0.15
                     });
 
                     // Rückstoß!
-                    cannon.recoilOffset = -20;  // Nach links (wegen Rückstoß)
+                    cannon.recoilOffset = 20;  // Nach rechts (wegen Rückstoß)
 
                     // Nadel-Konfetti beim Schuss aus der Mündung!
                     createNeedleConfetti(muzzleX, muzzleY, 25);
 
-                    cannon.shootTimer = 90 + Math.floor(Math.random() * 60);
+                    cannon.shootTimer = 60 + Math.floor(Math.random() * 40);
                 }
 
                 // Entferne wenn zu weit links
