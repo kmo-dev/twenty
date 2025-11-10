@@ -504,21 +504,21 @@
             let scaleX = 1;
             let scaleY = 1;
 
-            // Sin-Wert für Hüpf-Phase: 0 = oben, PI = unten
-            const sinValue = Math.sin(snowman.jumpPhase);
+            // Abs-Wert für Position: 0 = am Boden, 1 = oben in der Luft
+            const jumpHeight = Math.abs(Math.sin(snowman.jumpPhase));
 
-            if (sinValue < -0.5) {
+            if (jumpHeight > 0.7) {
                 // Oben in der Luft - strecken
                 scaleY = 1.2;
                 scaleX = 0.85;
-            } else if (sinValue > 0.8) {
-                // Ganz unten - stauchen
-                scaleY = 0.8;
-                scaleX = 1.25;
-            } else if (sinValue > 0) {
-                // Fallend - leicht strecken
-                scaleY = 1.1;
-                scaleX = 0.92;
+            } else if (jumpHeight < 0.2) {
+                // Ganz unten am Boden - stauchen
+                scaleY = 0.75;
+                scaleX = 1.3;
+            } else if (jumpHeight < 0.5) {
+                // Kurz nach dem Aufprall - noch etwas gestaucht
+                scaleY = 0.85;
+                scaleX = 1.15;
             }
 
             // Transformation für Squash/Stretch anwenden (vom Boden aus)
@@ -990,7 +990,7 @@
             ctx.save();
 
             // Gehanimation
-            gingerbread.walkPhase = (gingerbread.walkPhase || 0) + 0.15;
+            gingerbread.walkPhase = (gingerbread.walkPhase || 0) + 0.08;
             const bounce = Math.abs(Math.sin(gingerbread.walkPhase)) * 8;
 
             const drawY = gingerbread.y - bounce;
@@ -1000,18 +1000,21 @@
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 4;
 
-            // Beine (zwei große runde Beine)
-            const legOffset = Math.sin(gingerbread.walkPhase) * 10;
+            // Beine (zwei große runde Beine mit Bewegung)
+            const legSwing = Math.sin(gingerbread.walkPhase) * 15;
+            const legLift = Math.abs(Math.sin(gingerbread.walkPhase * 2)) * 12;
 
-            // Linkes Bein
+            // Linkes Bein (hebt sich abwechselnd)
+            const leftLegY = drawY + 100 + (legSwing > 0 ? legLift : 0);
             ctx.beginPath();
-            ctx.ellipse(gingerbread.x - 30, drawY + 100, 25, 40, 0, 0, Math.PI * 2);
+            ctx.ellipse(gingerbread.x - 30, leftLegY, 25, 40, 0, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
-            // Rechtes Bein
+            // Rechtes Bein (hebt sich abwechselnd)
+            const rightLegY = drawY + 100 + (legSwing < 0 ? legLift : 0);
             ctx.beginPath();
-            ctx.ellipse(gingerbread.x + 30, drawY + 100, 25, 40, 0, 0, Math.PI * 2);
+            ctx.ellipse(gingerbread.x + 30, rightLegY, 25, 40, 0, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
@@ -1027,16 +1030,20 @@
             ctx.fill();
             ctx.stroke();
 
-            // Arme (dick und rund)
-            // Linker Arm
+            // Arme (dick und rund mit Schwing-Animation)
+            const armSwing = Math.sin(gingerbread.walkPhase) * 0.3;
+
+            // Linker Arm (schwingt entgegengesetzt zu rechtem Bein)
+            const leftArmY = drawY + 10 + Math.sin(gingerbread.walkPhase) * 8;
             ctx.beginPath();
-            ctx.ellipse(gingerbread.x - 85, drawY + 10, 20, 50, -0.3, 0, Math.PI * 2);
+            ctx.ellipse(gingerbread.x - 85, leftArmY, 20, 50, -0.3 - armSwing, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
-            // Rechter Arm
+            // Rechter Arm (schwingt entgegengesetzt zu linkem Bein)
+            const rightArmY = drawY + 10 - Math.sin(gingerbread.walkPhase) * 8;
             ctx.beginPath();
-            ctx.ellipse(gingerbread.x + 85, drawY + 10, 20, 50, 0.3, 0, Math.PI * 2);
+            ctx.ellipse(gingerbread.x + 85, rightArmY, 20, 50, 0.3 + armSwing, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
@@ -1074,18 +1081,18 @@
             ctx.arc(gingerbread.x, drawY - 75, 20, 0.2, Math.PI - 0.2);
             ctx.stroke();
 
-            // Zuckerguss-Knöpfe auf Armen und Beinen
+            // Zuckerguss-Knöpfe auf Armen
             ctx.fillStyle = '#ffffff';
             ctx.strokeStyle = '#cccccc';
             ctx.lineWidth = 2;
             // Linker Arm
             ctx.beginPath();
-            ctx.arc(gingerbread.x - 85, drawY + 10, 6, 0, Math.PI * 2);
+            ctx.arc(gingerbread.x - 85, leftArmY, 6, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
             // Rechter Arm
             ctx.beginPath();
-            ctx.arc(gingerbread.x + 85, drawY + 10, 6, 0, Math.PI * 2);
+            ctx.arc(gingerbread.x + 85, rightArmY, 6, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
@@ -1330,8 +1337,8 @@
                 const snowman = snowmen[i];
                 snowman.x -= snowman.speed;
 
-                // Hüpf-Animation
-                snowman.jumpPhase += 0.1;
+                // Hüpf-Animation (langsamer)
+                snowman.jumpPhase += 0.05;
                 snowman.jumpOffset = -Math.abs(Math.sin(snowman.jumpPhase)) * 15;
 
                 // Entferne wenn zu weit links
