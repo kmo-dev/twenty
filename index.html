@@ -175,6 +175,104 @@
             color: #4ecdc4;
             margin-top: 5px;
         }
+
+        #musicControls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 10;
+            min-width: 200px;
+        }
+
+        #musicControls h3 {
+            color: #4ecdc4;
+            font-size: 16px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        #muteButton {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        #muteButton:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        #muteButton.muted {
+            background: rgba(255, 0, 0, 0.3);
+            border-color: #ff6b6b;
+        }
+
+        #volumeSlider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.3);
+            outline: none;
+            cursor: pointer;
+        }
+
+        #volumeSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #volumeSlider::-webkit-slider-thumb:hover {
+            background: #45b7af;
+            transform: scale(1.2);
+        }
+
+        #volumeSlider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s;
+        }
+
+        #volumeSlider::-moz-range-thumb:hover {
+            background: #45b7af;
+            transform: scale(1.2);
+        }
+
+        #volumeValue {
+            color: white;
+            font-size: 14px;
+            min-width: 35px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -194,6 +292,15 @@
 
         <div id="jumpButton">⬆</div>
 
+        <div id="musicControls">
+            <h3>🎵 Musik</h3>
+            <div class="volume-control">
+                <button id="muteButton">🔊</button>
+                <input type="range" id="volumeSlider" min="0" max="100" value="50">
+                <span id="volumeValue">50%</span>
+            </div>
+        </div>
+
         <div id="instructions">
             <h3>Steuerung:</h3>
             <p>🖱️ Maus: Zielen</p>
@@ -208,6 +315,13 @@
             <button id="restartButton">Nochmal spielen</button>
         </div>
     </div>
+
+    <!-- Hintergrundmusik -->
+    <audio id="bgMusic" loop>
+        <!-- Hier deine Musikdatei einfügen -->
+        <!-- Beispiel: <source src="music/weihnachtsmusik.mp3" type="audio/mpeg"> -->
+        <!-- Oder externe URL: <source src="https://example.com/music.mp3" type="audio/mpeg"> -->
+    </audio>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -1678,6 +1792,55 @@
         setTimeout(() => {
             document.getElementById('instructions').classList.add('hidden');
         }, 5000);
+
+        // Musik Steuerung
+        const bgMusic = document.getElementById('bgMusic');
+        const muteButton = document.getElementById('muteButton');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeValue = document.getElementById('volumeValue');
+
+        // Setze initiale Lautstärke
+        bgMusic.volume = volumeSlider.value / 100;
+
+        // Mute/Unmute Toggle
+        muteButton.addEventListener('click', () => {
+            if (bgMusic.muted) {
+                bgMusic.muted = false;
+                muteButton.textContent = '🔊';
+                muteButton.classList.remove('muted');
+            } else {
+                bgMusic.muted = true;
+                muteButton.textContent = '🔇';
+                muteButton.classList.add('muted');
+            }
+        });
+
+        // Volume Slider
+        volumeSlider.addEventListener('input', (e) => {
+            const volume = e.target.value;
+            bgMusic.volume = volume / 100;
+            volumeValue.textContent = volume + '%';
+
+            // Auto-unmute wenn Lautstärke geändert wird
+            if (bgMusic.muted && volume > 0) {
+                bgMusic.muted = false;
+                muteButton.textContent = '🔊';
+                muteButton.classList.remove('muted');
+            }
+        });
+
+        // Musik starten beim ersten User-Interaction (Browser-Policy)
+        const startMusic = () => {
+            bgMusic.play().catch(e => {
+                console.log('Autoplay verhindert. Musik startet beim ersten Klick.');
+            });
+            // Event Listener entfernen nach erstem Aufruf
+            document.removeEventListener('click', startMusic);
+            document.removeEventListener('keydown', startMusic);
+        };
+
+        document.addEventListener('click', startMusic);
+        document.addEventListener('keydown', startMusic);
 
         // Start Game
         gameLoop();
