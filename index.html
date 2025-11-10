@@ -241,7 +241,8 @@
             jumpPower: -15,
             isJumping: false,
             health: 3,
-            maxHealth: 3
+            maxHealth: 3,
+            landingSquash: 0
         };
 
         // Arrays für Spielobjekte
@@ -280,6 +281,33 @@
         // Zeichne Weihnachtsmann
         function drawSanta() {
             ctx.save();
+
+            // Squash and Stretch basierend auf Sprunggeschwindigkeit
+            let scaleX = 1;
+            let scaleY = 1;
+
+            if (santa.isJumping) {
+                // Im Sprung: gestreckt (hoch) wenn nach oben, gestaucht beim Fallen
+                if (santa.velocityY < -5) {
+                    // Springt hoch - strecken
+                    scaleY = 1.15;
+                    scaleX = 0.9;
+                } else if (santa.velocityY > 5) {
+                    // Fällt runter - leicht strecken
+                    scaleY = 1.1;
+                    scaleX = 0.95;
+                }
+            } else if (santa.landingSquash > 0) {
+                // Gerade gelandet - stauchen
+                scaleY = 0.85;
+                scaleX = 1.15;
+                santa.landingSquash--;
+            }
+
+            // Transformation für Squash/Stretch anwenden
+            ctx.translate(santa.x + santa.width / 2, santa.y + santa.height);
+            ctx.scale(scaleX, scaleY);
+            ctx.translate(-(santa.x + santa.width / 2), -(santa.y + santa.height));
 
             // Körper (rot)
             ctx.fillStyle = '#c41e3a';
@@ -321,7 +349,10 @@
             ctx.arc(santa.x + santa.width / 2, santa.y + 20, 12, 0, Math.PI * 2);
             ctx.fill();
 
-            // Waffe (Schneekanone)
+            ctx.restore();
+
+            // Waffe (Schneekanone) - separat ohne Squash/Stretch
+            ctx.save();
             const angle = Math.atan2(mouseY - (santa.y + 30), mouseX - (santa.x + santa.width));
             ctx.translate(santa.x + santa.width, santa.y + 30);
             ctx.rotate(angle);
@@ -338,6 +369,34 @@
         // Zeichne Schneemann (mit Hüpfen)
         function drawSnowman(snowman) {
             const drawY = snowman.y + snowman.jumpOffset;
+
+            ctx.save();
+
+            // Squash and Stretch basierend auf Hüpf-Phase
+            let scaleX = 1;
+            let scaleY = 1;
+
+            // Sin-Wert für Hüpf-Phase: 0 = oben, PI = unten
+            const sinValue = Math.sin(snowman.jumpPhase);
+
+            if (sinValue < -0.5) {
+                // Oben in der Luft - strecken
+                scaleY = 1.2;
+                scaleX = 0.85;
+            } else if (sinValue > 0.8) {
+                // Ganz unten - stauchen
+                scaleY = 0.8;
+                scaleX = 1.25;
+            } else if (sinValue > 0) {
+                // Fallend - leicht strecken
+                scaleY = 1.1;
+                scaleX = 0.92;
+            }
+
+            // Transformation für Squash/Stretch anwenden (vom Boden aus)
+            ctx.translate(snowman.x, drawY + 40);
+            ctx.scale(scaleX, scaleY);
+            ctx.translate(-snowman.x, -(drawY + 40));
 
             ctx.fillStyle = '#ffffff';
             ctx.strokeStyle = '#000000';
@@ -384,6 +443,8 @@
                 ctx.arc(snowman.x, drawY - 5 + i * 7, 2, 0, Math.PI * 2);
                 ctx.fill();
             }
+
+            ctx.restore();
         }
 
         // Zeichne Schneekugel
@@ -478,6 +539,10 @@
             // Boden Kollision
             const ground = canvas.height - 150;
             if (santa.y >= ground) {
+                if (santa.isJumping) {
+                    // Gerade gelandet - Squash-Effekt triggern
+                    santa.landingSquash = 5;
+                }
                 santa.y = ground;
                 santa.velocityY = 0;
                 santa.isJumping = false;
@@ -671,6 +736,8 @@
             santa.health = santa.maxHealth;
             santa.y = canvas.height - 150;
             santa.velocityY = 0;
+            santa.isJumping = false;
+            santa.landingSquash = 0;
             snowballs.length = 0;
             snowmen.length = 0;
             particles.length = 0;
