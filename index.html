@@ -1186,13 +1186,13 @@
                     const muzzleX = cannon.x + 10 + barrelLength * Math.cos(cannonAngle);
                     const muzzleY = cannon.y + 50 + barrelLength * Math.sin(cannonAngle);
 
-                    // Tannenbaum schießen (nach LINKS, auf Santa zu)
-                    const speed = 10;
+                    // Tannenbaum schießen (nach LINKS und OBEN, auf Santas Kopf)
+                    const speed = 12;
                     flyingTrees.push({
                         x: muzzleX,
                         y: muzzleY,
-                        vx: -speed * Math.cos(Math.PI / 6),   // nach links: ca. -8.66
-                        vy: -speed * Math.sin(Math.PI / 6),   // leicht nach oben: ca. -5
+                        vx: -speed * 0.7,   // nach links: ca. -8.4
+                        vy: -speed * 0.7,   // nach oben: ca. -8.4 (stark nach oben für Bogen)
                         rotation: Math.PI / 4,  // Anfangsrotation
                         rotationSpeed: 0.15
                     });
