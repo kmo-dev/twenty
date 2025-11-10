@@ -180,36 +180,18 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 15px;
-            border-radius: 10px;
             z-index: 10;
-            min-width: 200px;
-        }
-
-        #musicControls h3 {
-            color: #4ecdc4;
-            font-size: 16px;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-
-        .volume-control {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
         }
 
         #muteButton {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.6);
             border: 2px solid white;
             color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 5px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
             cursor: pointer;
-            font-size: 20px;
+            font-size: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -217,61 +199,13 @@
         }
 
         #muteButton:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.8);
+            transform: scale(1.1);
         }
 
         #muteButton.muted {
-            background: rgba(255, 0, 0, 0.3);
+            background: rgba(255, 0, 0, 0.6);
             border-color: #ff6b6b;
-        }
-
-        #volumeSlider {
-            flex: 1;
-            -webkit-appearance: none;
-            appearance: none;
-            height: 6px;
-            border-radius: 3px;
-            background: rgba(255, 255, 255, 0.3);
-            outline: none;
-            cursor: pointer;
-        }
-
-        #volumeSlider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #4ecdc4;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        #volumeSlider::-webkit-slider-thumb:hover {
-            background: #45b7af;
-            transform: scale(1.2);
-        }
-
-        #volumeSlider::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #4ecdc4;
-            cursor: pointer;
-            border: none;
-            transition: all 0.3s;
-        }
-
-        #volumeSlider::-moz-range-thumb:hover {
-            background: #45b7af;
-            transform: scale(1.2);
-        }
-
-        #volumeValue {
-            color: white;
-            font-size: 14px;
-            min-width: 35px;
-            text-align: center;
         }
     </style>
 </head>
@@ -293,12 +227,7 @@
         <div id="jumpButton">⬆</div>
 
         <div id="musicControls">
-            <h3>🎵 Musik</h3>
-            <div class="volume-control">
-                <button id="muteButton">🔊</button>
-                <input type="range" id="volumeSlider" min="0" max="100" value="50">
-                <span id="volumeValue">50%</span>
-            </div>
+            <button id="muteButton">🔊</button>
         </div>
 
         <div id="instructions">
@@ -327,12 +256,20 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Canvas Größe
+        // Canvas Größe - fixe Spielfeldgröße für konsistentes Gameplay
+        const GAME_WIDTH = 1200;
+        const GAME_HEIGHT = 600;
+        canvas.width = GAME_WIDTH;
+        canvas.height = GAME_HEIGHT;
+
+        // Canvas skalieren für verschiedene Bildschirmgrößen
         function resizeCanvas() {
-            const maxWidth = Math.min(window.innerWidth - 40, 1200);
-            const maxHeight = Math.min(window.innerHeight - 200, 600);
-            canvas.width = maxWidth;
-            canvas.height = maxHeight;
+            const scaleX = (window.innerWidth - 40) / GAME_WIDTH;
+            const scaleY = (window.innerHeight - 200) / GAME_HEIGHT;
+            const scale = Math.min(scaleX, scaleY, 1); // Max 1 (100%), nicht größer
+
+            canvas.style.width = (GAME_WIDTH * scale) + 'px';
+            canvas.style.height = (GAME_HEIGHT * scale) + 'px';
         }
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
@@ -1997,8 +1934,11 @@
         // Event Listeners
         canvas.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
-            mouseX = e.clientX - rect.left;
-            mouseY = e.clientY - rect.top;
+            // Skalierung berücksichtigen
+            const scaleX = GAME_WIDTH / rect.width;
+            const scaleY = GAME_HEIGHT / rect.height;
+            mouseX = (e.clientX - rect.left) * scaleX;
+            mouseY = (e.clientY - rect.top) * scaleY;
         });
 
         canvas.addEventListener('click', () => {
@@ -2029,8 +1969,11 @@
             e.preventDefault();
             const rect = canvas.getBoundingClientRect();
             const touch = e.touches[0];
-            mouseX = touch.clientX - rect.left;
-            mouseY = touch.clientY - rect.top;
+            // Skalierung berücksichtigen
+            const scaleX = GAME_WIDTH / rect.width;
+            const scaleY = GAME_HEIGHT / rect.height;
+            mouseX = (touch.clientX - rect.left) * scaleX;
+            mouseY = (touch.clientY - rect.top) * scaleY;
 
             if (gameRunning) {
                 shootSnowball();
@@ -2041,8 +1984,11 @@
             e.preventDefault();
             const rect = canvas.getBoundingClientRect();
             const touch = e.touches[0];
-            mouseX = touch.clientX - rect.left;
-            mouseY = touch.clientY - rect.top;
+            // Skalierung berücksichtigen
+            const scaleX = GAME_WIDTH / rect.width;
+            const scaleY = GAME_HEIGHT / rect.height;
+            mouseX = (touch.clientX - rect.left) * scaleX;
+            mouseY = (touch.clientY - rect.top) * scaleY;
         });
 
         document.getElementById('restartButton').addEventListener('click', restartGame);
@@ -2062,11 +2008,9 @@
         // Musik Steuerung
         const bgMusic = document.getElementById('bgMusic');
         const muteButton = document.getElementById('muteButton');
-        const volumeSlider = document.getElementById('volumeSlider');
-        const volumeValue = document.getElementById('volumeValue');
 
-        // Setze initiale Lautstärke
-        bgMusic.volume = volumeSlider.value / 100;
+        // Setze Lautstärke auf 50%
+        bgMusic.volume = 0.5;
 
         // Mute/Unmute Toggle
         muteButton.addEventListener('click', () => {
@@ -2078,20 +2022,6 @@
                 bgMusic.muted = true;
                 muteButton.textContent = '🔇';
                 muteButton.classList.add('muted');
-            }
-        });
-
-        // Volume Slider
-        volumeSlider.addEventListener('input', (e) => {
-            const volume = e.target.value;
-            bgMusic.volume = volume / 100;
-            volumeValue.textContent = volume + '%';
-
-            // Auto-unmute wenn Lautstärke geändert wird
-            if (bgMusic.muted && volume > 0) {
-                bgMusic.muted = false;
-                muteButton.textContent = '🔊';
-                muteButton.classList.remove('muted');
             }
         });
 
