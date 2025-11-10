@@ -806,22 +806,22 @@
             ctx.translate(cannonX + 10, cannon.y + 50);
             ctx.rotate(cannonAngle);
 
-            // Rohr (länger und dicker)
+            // Rohr (länger und dicker) - GESPIEGELT nach links
             ctx.fillStyle = '#2d3748';
-            ctx.fillRect(-10, -15, 100, 30);
+            ctx.fillRect(-100, -15, 100, 30);  // Geht jetzt von -100 bis 0 (nach LINKS)
 
-            // Kanonenmündung
+            // Kanonenmündung (am linken Ende)
             ctx.fillStyle = '#1a202c';
-            ctx.fillRect(90, -20, 15, 40);
+            ctx.fillRect(-115, -20, 15, 40);
 
             // Verzierung (Metallringe)
             ctx.strokeStyle = '#4a5568';
             ctx.lineWidth = 4;
             ctx.beginPath();
-            ctx.arc(25, 0, 18, 0, Math.PI * 2);
+            ctx.arc(-35, 0, 18, 0, Math.PI * 2);
             ctx.stroke();
             ctx.beginPath();
-            ctx.arc(60, 0, 18, 0, Math.PI * 2);
+            ctx.arc(-70, 0, 18, 0, Math.PI * 2);
             ctx.stroke();
 
             ctx.restore();
@@ -860,7 +860,8 @@
                 health: 10,
                 maxHealth: 10,
                 shootTimer: 60 + Math.floor(Math.random() * 40),  // Schießt schnell
-                recoilOffset: 0
+                recoilOffset: 0,
+                swingPhase: Math.random() * Math.PI * 2  // Für Wind-Schwanken
             });
         }
 
@@ -1155,10 +1156,17 @@
                 // Fall-Animation (mit Fallschirm)
                 if (!cannon.landed) {
                     cannon.y += cannon.fallSpeed;
+
+                    // Schwanken im Wind (nur während des Fallens)
+                    cannon.swingPhase += 0.05;
+                    const swingOffset = Math.sin(cannon.swingPhase) * 15;
+                    cannon.x = (canvas.width - 200) + swingOffset;
+
                     // Landen wenn Boden erreicht
                     if (cannon.y >= cannon.groundY) {
                         cannon.y = cannon.groundY;
                         cannon.landed = true;
+                        cannon.x = canvas.width - 200;  // Fixiere Position beim Landen
                     }
                 }
 
@@ -1172,8 +1180,9 @@
                 cannon.shootTimer--;
                 if (cannon.shootTimer <= 0) {
                     // Berechne Mündungsposition (Kanone ist -30° rotiert = nach LINKS)
+                    // Mündung ist jetzt bei -115 vom Drehpunkt
                     const cannonAngle = -Math.PI / 6; // -30 Grad (nach links oben)
-                    const barrelLength = 100;
+                    const barrelLength = -115;  // Negativ weil nach links
                     const muzzleX = cannon.x + 10 + barrelLength * Math.cos(cannonAngle);
                     const muzzleY = cannon.y + 50 + barrelLength * Math.sin(cannonAngle);
 
