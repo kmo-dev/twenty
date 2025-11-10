@@ -550,70 +550,106 @@
             }
 
             // Transformation für Squash/Stretch anwenden
-            ctx.translate(golem.x, drawY + 90);
+            ctx.translate(golem.x, drawY + 70);
             ctx.scale(scaleX, scaleY);
-            ctx.translate(-golem.x, -(drawY + 90));
+            ctx.translate(-golem.x, -(drawY + 70));
 
             ctx.fillStyle = '#ffffff';
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 3;
 
-            // Beine (Walking Animation)
-            const legSwing = Math.sin(golem.walkPhase) * 10;
+            // Beine als Schneekugeln (Walking Animation - abwechselnd)
+            const leftLegPhase = Math.sin(golem.walkPhase);
+            const rightLegPhase = Math.sin(golem.walkPhase + Math.PI); // Versetzt
 
-            // Linkes Bein
+            // Linkes Bein (Kugel)
+            const leftLegY = drawY + 65 - Math.abs(leftLegPhase) * 8; // Hüpft hoch und runter
+            const leftLegX = golem.x - 12 + leftLegPhase * 6; // Bewegt sich vor und zurück
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
-            ctx.moveTo(golem.x - 15, drawY + 60);
-            ctx.lineTo(golem.x - 10 + legSwing, drawY + 90);
-            ctx.lineTo(golem.x - 20 + legSwing, drawY + 90);
-            ctx.closePath();
+            ctx.arc(leftLegX, leftLegY, 14, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
-            // Rechtes Bein
+            // Rechtes Bein (Kugel)
+            const rightLegY = drawY + 65 - Math.abs(rightLegPhase) * 8;
+            const rightLegX = golem.x + 12 + rightLegPhase * 6;
             ctx.beginPath();
-            ctx.moveTo(golem.x + 15, drawY + 60);
-            ctx.lineTo(golem.x + 20 - legSwing, drawY + 90);
-            ctx.lineTo(golem.x + 10 - legSwing, drawY + 90);
-            ctx.closePath();
+            ctx.arc(rightLegX, rightLegY, 14, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
             // Unterer Körper (größer)
             ctx.beginPath();
-            ctx.arc(golem.x, drawY + 50, 35, 0, Math.PI * 2);
+            ctx.arc(golem.x, drawY + 40, 35, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
             // Mittlerer Körper
             ctx.beginPath();
-            ctx.arc(golem.x, drawY + 15, 28, 0, Math.PI * 2);
+            ctx.arc(golem.x, drawY + 5, 28, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
             // Kopf (groß)
             ctx.beginPath();
-            ctx.arc(golem.x, drawY - 20, 22, 0, Math.PI * 2);
+            ctx.arc(golem.x, drawY - 30, 22, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
-            // Augen (böse)
-            ctx.fillStyle = '#ff0000';
+            // Böse Augenbrauen
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 4;
             ctx.beginPath();
-            ctx.arc(golem.x - 8, drawY - 24, 4, 0, Math.PI * 2);
-            ctx.arc(golem.x + 8, drawY - 24, 4, 0, Math.PI * 2);
+            // Linke Augenbraue (schräg nach unten)
+            ctx.moveTo(golem.x - 16, drawY - 36);
+            ctx.lineTo(golem.x - 4, drawY - 32);
+            // Rechte Augenbraue (schräg nach unten)
+            ctx.moveTo(golem.x + 4, drawY - 32);
+            ctx.lineTo(golem.x + 16, drawY - 36);
+            ctx.stroke();
+
+            // Augen (böse rot glühend)
+            ctx.fillStyle = '#ff0000';
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(golem.x - 8, drawY - 30, 5, 0, Math.PI * 2);
+            ctx.arc(golem.x + 8, drawY - 30, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Pupillen (klein und böse)
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(golem.x - 8, drawY - 30, 2, 0, Math.PI * 2);
+            ctx.arc(golem.x + 8, drawY - 30, 2, 0, Math.PI * 2);
             ctx.fill();
 
-            // Mund (grimmig)
+            // Mund (zackig und böse)
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 3;
             ctx.beginPath();
-            ctx.moveTo(golem.x - 10, drawY - 12);
-            ctx.lineTo(golem.x - 5, drawY - 8);
-            ctx.lineTo(golem.x + 5, drawY - 8);
-            ctx.lineTo(golem.x + 10, drawY - 12);
+            ctx.moveTo(golem.x - 12, drawY - 18);
+            ctx.lineTo(golem.x - 8, drawY - 22);
+            ctx.lineTo(golem.x - 4, drawY - 18);
+            ctx.lineTo(golem.x, drawY - 22);
+            ctx.lineTo(golem.x + 4, drawY - 18);
+            ctx.lineTo(golem.x + 8, drawY - 22);
+            ctx.lineTo(golem.x + 12, drawY - 18);
             ctx.stroke();
+
+            // Zähne (spitz)
+            ctx.fillStyle = '#ffffff';
+            for (let i = -1; i <= 1; i++) {
+                ctx.beginPath();
+                ctx.moveTo(golem.x + i * 6 - 2, drawY - 18);
+                ctx.lineTo(golem.x + i * 6, drawY - 14);
+                ctx.lineTo(golem.x + i * 6 + 2, drawY - 18);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
 
             // Arme (dick)
             ctx.fillStyle = '#ffffff';
@@ -622,13 +658,13 @@
 
             // Linker Arm
             ctx.beginPath();
-            ctx.arc(golem.x - 35, drawY + 20, 12, 0, Math.PI * 2);
+            ctx.arc(golem.x - 38, drawY + 10, 12, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
             // Rechter Arm
             ctx.beginPath();
-            ctx.arc(golem.x + 35, drawY + 20, 12, 0, Math.PI * 2);
+            ctx.arc(golem.x + 38, drawY + 10, 12, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
@@ -636,7 +672,7 @@
             ctx.fillStyle = '#000000';
             for (let i = 0; i < 4; i++) {
                 ctx.beginPath();
-                ctx.arc(golem.x, drawY + 5 + i * 12, 4, 0, Math.PI * 2);
+                ctx.arc(golem.x, drawY - 5 + i * 12, 4, 0, Math.PI * 2);
                 ctx.fill();
             }
 
@@ -647,16 +683,16 @@
 
             // Hintergrund (rot)
             ctx.fillStyle = '#ff0000';
-            ctx.fillRect(golem.x - barWidth / 2, drawY - 50, barWidth, barHeight);
+            ctx.fillRect(golem.x - barWidth / 2, drawY - 60, barWidth, barHeight);
 
             // Gesundheit (grün)
             ctx.fillStyle = '#00ff00';
-            ctx.fillRect(golem.x - barWidth / 2, drawY - 50, barWidth * healthPercent, barHeight);
+            ctx.fillRect(golem.x - barWidth / 2, drawY - 60, barWidth * healthPercent, barHeight);
 
             // Rahmen
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 2;
-            ctx.strokeRect(golem.x - barWidth / 2, drawY - 50, barWidth, barHeight);
+            ctx.strokeRect(golem.x - barWidth / 2, drawY - 60, barWidth, barHeight);
 
             ctx.restore();
         }
@@ -665,7 +701,7 @@
         function spawnGolem() {
             golems.push({
                 x: canvas.width + 100,
-                y: canvas.height - 210,  // Größerer Offset wegen Größe
+                y: canvas.height - 180,  // Auf Bodenhöhe
                 width: 80,
                 height: 110,
                 speed: 1 + Math.random() * 0.5,  // Langsamer als Schneemänner
