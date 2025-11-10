@@ -899,7 +899,7 @@
             // Berechne Winkel zu Santa
             const dx = santa.x + santa.width / 2 - cannon.x;
             const dy = santa.y + santa.height / 2 - cannon.y;
-            const cannonAngle = Math.atan2(dy, dx); // Zeigt direkt auf Santa
+            const cannonAngle = Math.atan2(dy, dx) - 0.02; // Leicht höher zielen (~1 Grad)
 
             // Kanonen-Basis (Holz) - größer
             ctx.fillStyle = '#654321';
@@ -1299,7 +1299,7 @@
                     // Berechne Winkel zu Santa (dynamisch)
                     const dx = santa.x + santa.width / 2 - cannon.x;
                     const dy = santa.y + santa.height / 2 - cannon.y;
-                    const cannonAngle = Math.atan2(dy, dx);
+                    const cannonAngle = Math.atan2(dy, dx) - 0.02; // Leicht höher zielen (~1 Grad)
 
                     // Berechne Mündungsposition
                     const barrelLength = 115;  // Positive - barrel extends forward in angle direction
