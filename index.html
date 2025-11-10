@@ -918,27 +918,27 @@
             ctx.fill();
             ctx.stroke();
 
-            // Kanonen-Rohr (rotiert nach LINKS oben)
+            // Kanonen-Rohr (rotiert dynamisch auf Santa)
             ctx.save();
             ctx.translate(cannonX + 10, cannon.y + 50);
             ctx.rotate(cannonAngle);
 
-            // Rohr (länger und dicker) - GESPIEGELT nach links
+            // Rohr (länger und dicker) - in Schussrichtung
             ctx.fillStyle = '#2d3748';
-            ctx.fillRect(-100, -15, 100, 30);  // Geht jetzt von -100 bis 0 (nach LINKS)
+            ctx.fillRect(0, -15, 100, 30);  // Von 0 bis 100 in Schussrichtung
 
-            // Kanonenmündung (am linken Ende)
+            // Kanonenmündung (am vorderen Ende)
             ctx.fillStyle = '#1a202c';
-            ctx.fillRect(-115, -20, 15, 40);
+            ctx.fillRect(100, -20, 15, 40);
 
             // Verzierung (Metallringe)
             ctx.strokeStyle = '#4a5568';
             ctx.lineWidth = 4;
             ctx.beginPath();
-            ctx.arc(-35, 0, 18, 0, Math.PI * 2);
+            ctx.arc(35, 0, 18, 0, Math.PI * 2);
             ctx.stroke();
             ctx.beginPath();
-            ctx.arc(-70, 0, 18, 0, Math.PI * 2);
+            ctx.arc(70, 0, 18, 0, Math.PI * 2);
             ctx.stroke();
 
             ctx.restore();
@@ -1302,7 +1302,7 @@
                     const cannonAngle = Math.atan2(dy, dx);
 
                     // Berechne Mündungsposition
-                    const barrelLength = -115;  // Negativ weil nach links
+                    const barrelLength = 115;  // Positive - barrel extends forward in angle direction
                     const muzzleX = cannon.x + 10 + barrelLength * Math.cos(cannonAngle);
                     const muzzleY = cannon.y + 50 + barrelLength * Math.sin(cannonAngle);
 
