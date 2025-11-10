@@ -894,9 +894,9 @@
                 ctx.stroke();
             }
 
-            // Kanone (größer und nach LINKS rotiert)
+            // Kanone (größer und nach LINKS OBEN rotiert)
             const cannonX = cannon.x + recoilX;
-            const cannonAngle = -Math.PI / 6; // -30 Grad (nach LINKS oben)
+            const cannonAngle = Math.PI / 6; // +30 Grad (nach LINKS OBEN)
 
             // Kanonen-Basis (Holz) - größer
             ctx.fillStyle = '#654321';
@@ -1293,20 +1293,20 @@
                 // Schießen (auch während des Fallens!)
                 cannon.shootTimer--;
                 if (cannon.shootTimer <= 0) {
-                    // Berechne Mündungsposition (Kanone ist -30° rotiert = nach LINKS)
+                    // Berechne Mündungsposition (Kanone ist +30° rotiert = nach LINKS OBEN)
                     // Mündung ist jetzt bei -115 vom Drehpunkt
-                    const cannonAngle = -Math.PI / 6; // -30 Grad (nach links oben)
+                    const cannonAngle = Math.PI / 6; // +30 Grad (nach links oben)
                     const barrelLength = -115;  // Negativ weil nach links
                     const muzzleX = cannon.x + 10 + barrelLength * Math.cos(cannonAngle);
                     const muzzleY = cannon.y + 50 + barrelLength * Math.sin(cannonAngle);
 
-                    // Tannenbaum schießen (nach LINKS und OBEN, auf Santas Kopf)
-                    const speed = 12;
+                    // Tannenbaum schießen (nach LINKS und leicht OBEN, flacher Bogen)
+                    const speed = 11;
                     flyingTrees.push({
                         x: muzzleX,
                         y: muzzleY,
-                        vx: -speed * 0.7,   // nach links: ca. -8.4
-                        vy: -speed * 0.7,   // nach oben: ca. -8.4 (stark nach oben für Bogen)
+                        vx: -speed * 0.85,   // nach links: ca. -9.35 (mehr horizontal)
+                        vy: -speed * 0.4,    // nach oben: ca. -4.4 (flacher Winkel)
                         rotation: Math.PI / 4,  // Anfangsrotation
                         rotationSpeed: 0.15
                     });
