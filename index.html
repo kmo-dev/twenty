@@ -860,6 +860,20 @@
                 const parachuteX = cannon.x;
                 const parachuteY = cannon.y - 80;
 
+                // Seile
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(parachuteX - 40, parachuteY + 30);
+                ctx.lineTo(cannon.x - 30, cannon.y + 40);
+                ctx.moveTo(parachuteX - 20, parachuteY + 30);
+                ctx.lineTo(cannon.x - 10, cannon.y + 40);
+                ctx.moveTo(parachuteX + 20, parachuteY + 30);
+                ctx.lineTo(cannon.x + 10, cannon.y + 40);
+                ctx.moveTo(parachuteX + 40, parachuteY + 30);
+                ctx.lineTo(cannon.x + 30, cannon.y + 40);
+                ctx.stroke();
+
                 // Fallschirm Kappe (rot/weiß gestreift)
                 for (let i = 0; i < 6; i++) {
                     ctx.fillStyle = i % 2 === 0 ? '#ff0000' : '#ffffff';
@@ -885,7 +899,7 @@
             // Berechne Winkel zu Santa
             const dx = santa.x + santa.width / 2 - cannon.x;
             const dy = santa.y + santa.height / 2 - cannon.y;
-            const cannonAngle = Math.atan2(dy, dx) - 0.08; // Höher zielen
+            const cannonAngle = Math.atan2(dy, dx) + 0.08; // Höher zielen
 
             // Kanonen-Basis (Holz) - größer
             ctx.fillStyle = '#654321';
@@ -1285,7 +1299,7 @@
                     // Berechne Winkel zu Santa (dynamisch)
                     const dx = santa.x + santa.width / 2 - cannon.x;
                     const dy = santa.y + santa.height / 2 - cannon.y;
-                    const cannonAngle = Math.atan2(dy, dx) - 0.08; // Höher zielen
+                    const cannonAngle = Math.atan2(dy, dx) + 0.08; // Höher zielen
 
                     // Berechne Mündungsposition
                     const barrelLength = 115;  // Positive - barrel extends forward in angle direction
@@ -1653,18 +1667,6 @@
 
             // Santa
             drawSanta();
-
-            // Ziellinie
-            if (!isMobile) {
-                ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([5, 5]);
-                ctx.beginPath();
-                ctx.moveTo(santa.x + santa.width, santa.y + 30);
-                ctx.lineTo(mouseX, mouseY);
-                ctx.stroke();
-                ctx.setLineDash([]);
-            }
         }
 
         // Game Loop
