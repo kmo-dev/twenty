@@ -1868,6 +1868,81 @@
 
             // Santa
             drawSanta();
+
+            // Lautsprecher mit Beat-Animation
+            drawSpeakers();
+        }
+
+        // Zeichne animierte Lautsprecher
+        let beatPhase = 0;
+        function drawSpeakers() {
+            beatPhase += 0.15;
+            const pulse = Math.abs(Math.sin(beatPhase)) * 0.3 + 0.7; // Pulsiert zwischen 0.7 und 1.0
+
+            // Linker Lautsprecher
+            drawSpeaker(60, canvas.height - 150, pulse);
+
+            // Rechter Lautsprecher
+            drawSpeaker(canvas.width - 60, canvas.height - 150, pulse);
+        }
+
+        function drawSpeaker(x, y, pulse) {
+            ctx.save();
+
+            // Lautsprecher-Box (schwarz mit Holz-Rahmen)
+            ctx.fillStyle = '#1a1a1a';
+            ctx.strokeStyle = '#654321';
+            ctx.lineWidth = 4;
+            ctx.fillRect(x - 40, y - 60, 80, 120);
+            ctx.strokeRect(x - 40, y - 60, 80, 120);
+
+            // Bass-Lautsprecher (pulsiert mit Beat)
+            const bassRadius = 25 * pulse;
+            ctx.fillStyle = '#333333';
+            ctx.beginPath();
+            ctx.arc(x, y, bassRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Membran-Details
+            ctx.strokeStyle = '#555555';
+            ctx.lineWidth = 2;
+            for (let i = 1; i <= 3; i++) {
+                ctx.beginPath();
+                ctx.arc(x, y, bassRadius * (i / 4), 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Hochton-Lautsprecher (oben, kleiner, pulsiert auch)
+            const trebleRadius = 10 * pulse;
+            ctx.fillStyle = '#2a2a2a';
+            ctx.beginPath();
+            ctx.arc(x, y - 45, trebleRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#444444';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(x, y - 45, trebleRadius * 0.6, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Sound-Wellen (wenn Beat stark ist)
+            if (pulse > 0.9) {
+                ctx.strokeStyle = `rgba(78, 205, 196, ${(pulse - 0.9) * 10})`;
+                ctx.lineWidth = 2;
+                for (let i = 0; i < 3; i++) {
+                    ctx.beginPath();
+                    const waveRadius = 35 + i * 15;
+                    ctx.arc(x, y, waveRadius, -Math.PI / 4, Math.PI / 4);
+                    ctx.stroke();
+                }
+            }
+
+            // LED-Anzeige (pulsiert mit Beat)
+            const ledBrightness = pulse;
+            ctx.fillStyle = `rgba(255, 0, 0, ${ledBrightness})`;
+            ctx.fillRect(x - 15, y + 50, 30, 6);
+
+            ctx.restore();
         }
 
         // Game Loop
