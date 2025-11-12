@@ -1884,6 +1884,162 @@
 
             // Rechter Lautsprecher (gespiegelt)
             drawSpeaker(canvas.width - 42, canvas.height - 60, pulse, true);
+
+            // Rap-Elf neben rechtem Lautsprecher
+            drawRapElf(canvas.width - 110, canvas.height - 60, pulse);
+        }
+
+        // Zeichne Rap-Elf
+        function drawRapElf(x, y, pulse) {
+            ctx.save();
+
+            // Kopf-Nicken zum Beat
+            const headBob = (pulse - 0.85) * 8; // Nickt zum Beat
+
+            // Körper (grünes Elfen-Outfit)
+            ctx.fillStyle = '#228b22';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1.5;
+
+            // Beine
+            ctx.fillRect(x - 6, y + 5, 4, 12);
+            ctx.strokeRect(x - 6, y + 5, 4, 12);
+            ctx.fillRect(x + 2, y + 5, 4, 12);
+            ctx.strokeRect(x + 2, y + 5, 4, 12);
+
+            // Körper
+            ctx.beginPath();
+            ctx.ellipse(x, y, 8, 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Kopf (bewegt sich zum Beat)
+            const headY = y - 12 + headBob;
+            ctx.fillStyle = '#ffd700'; // Goldene Haut
+            ctx.beginPath();
+            ctx.arc(x, headY, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Elfen-Mütze (rot mit weißer Bommel)
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.moveTo(x - 7, headY - 4);
+            ctx.lineTo(x + 7, headY - 4);
+            ctx.lineTo(x + 2, headY - 15);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Bommel
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(x + 2, headY - 15, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Augen (cool, geschlossen beim Beat)
+            ctx.fillStyle = '#000000';
+            if (pulse > 0.9) {
+                // Geschlossen beim harten Beat
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(x - 3, headY);
+                ctx.lineTo(x - 1, headY);
+                ctx.moveTo(x + 1, headY);
+                ctx.lineTo(x + 3, headY);
+                ctx.stroke();
+                ctx.lineWidth = 1.5;
+            } else {
+                // Offen
+                ctx.beginPath();
+                ctx.arc(x - 2.5, headY, 1.5, 0, Math.PI * 2);
+                ctx.arc(x + 2.5, headY, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Mund (O-Form beim Rappen)
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            if (pulse > 0.85) {
+                ctx.arc(x, headY + 3, 2, 0, Math.PI * 2); // Großes O
+            } else {
+                ctx.arc(x, headY + 3, 1.5, 0, Math.PI); // Lächeln
+            }
+            ctx.stroke();
+
+            // Arm mit Mikrofon (bewegt sich zum Beat)
+            const armExtension = pulse > 0.85 ? 3 : 0;
+
+            // Arm
+            ctx.strokeStyle = '#228b22';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(x + 6, y - 5);
+            ctx.lineTo(x + 12 + armExtension, y - 2);
+            ctx.stroke();
+
+            // Hand
+            ctx.fillStyle = '#ffd700';
+            ctx.beginPath();
+            ctx.arc(x + 12 + armExtension, y - 2, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Mikrofon (klassisches Mic)
+            ctx.fillStyle = '#333333';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
+            // Mikrofon-Kopf
+            ctx.beginPath();
+            ctx.ellipse(x + 16 + armExtension, y - 3, 2.5, 3.5, Math.PI / 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            // Gitter
+            ctx.strokeStyle = '#666666';
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(x + 14.5 + armExtension, y - 4 + i * 1.5);
+                ctx.lineTo(x + 17.5 + armExtension, y - 2 + i * 1.5);
+                ctx.stroke();
+            }
+            // Kabel
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(x + 16 + armExtension, y);
+            ctx.lineTo(x + 18, y + 8);
+            ctx.stroke();
+
+            // Anderer Arm (hängt locker)
+            ctx.strokeStyle = '#228b22';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(x - 6, y - 5);
+            ctx.lineTo(x - 10, y + 3);
+            ctx.stroke();
+
+            // Hand
+            ctx.fillStyle = '#ffd700';
+            ctx.beginPath();
+            ctx.arc(x - 10, y + 3, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Schuhe (spitze Elfen-Schuhe)
+            ctx.fillStyle = '#654321';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.ellipse(x - 6, y + 17, 3, 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.ellipse(x + 2, y + 17, 3, 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.restore();
         }
 
         function drawSpeaker(x, y, pulse, mirror) {
