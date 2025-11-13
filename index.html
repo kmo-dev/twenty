@@ -1885,11 +1885,109 @@
             // Rechter Lautsprecher (gespiegelt)
             drawSpeaker(canvas.width - 42, canvas.height - 60, pulse, true);
 
-            // Fan-Crowd vor dem Elf (voller und bis zum Rand)
-            drawFanCrowd(canvas.width - 155, canvas.height - 55, pulse);
+            // Bühne für den Rap-Elf
+            drawStage(canvas.width - 120, canvas.height - 20, pulse);
 
-            // Rap-Elf neben rechtem Lautsprecher
+            // Scheinwerfer-Lichtkegel (transparent, darunter)
+            drawSpotlights(canvas.width - 110, canvas.height - 60, pulse);
+
+            // Fan-Crowd vor dem Elf (mit Lücke für Bühne)
+            drawFanCrowd(canvas.width - 165, canvas.height - 55, pulse);
+
+            // Rap-Elf auf der Bühne
             drawRapElf(canvas.width - 110, canvas.height - 60, pulse);
+        }
+
+        // Zeichne Bühne
+        function drawStage(x, y, pulse) {
+            ctx.save();
+
+            // Bühnen-Plattform (dunkelgrau/schwarz)
+            ctx.fillStyle = '#2a2a2a';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.fillRect(x - 25, y, 50, 10);
+            ctx.strokeRect(x - 25, y, 50, 10);
+
+            // Holz-Textur (Linien)
+            ctx.strokeStyle = '#1a1a1a';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.moveTo(x - 25 + i * 12, y);
+                ctx.lineTo(x - 25 + i * 12, y + 10);
+                ctx.stroke();
+            }
+
+            // Bühnen-Beine
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(x - 20, y + 10, 4, 8);
+            ctx.fillRect(x + 16, y + 10, 4, 8);
+
+            ctx.restore();
+        }
+
+        // Zeichne Scheinwerfer mit beweglichem Licht
+        let spotlightAngle = 0;
+        function drawSpotlights(elfX, elfY, pulse) {
+            ctx.save();
+
+            spotlightAngle += 0.02; // Langsame Bewegung
+
+            // Linker Scheinwerfer (orange/gelb)
+            const leftAngle = Math.sin(spotlightAngle) * 0.15;
+            drawSpotlight(elfX - 30, canvas.height - 15, elfX, elfY, 'rgba(255, 200, 0, 0.15)', leftAngle, pulse);
+
+            // Rechter Scheinwerfer (blau/cyan)
+            const rightAngle = Math.sin(spotlightAngle + Math.PI) * 0.15;
+            drawSpotlight(elfX + 30, canvas.height - 15, elfX, elfY, 'rgba(0, 200, 255, 0.15)', rightAngle, pulse);
+
+            ctx.restore();
+        }
+
+        function drawSpotlight(lightX, lightY, targetX, targetY, color, angleOffset, pulse) {
+            ctx.save();
+
+            // Lichtkegel (Dreieck)
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(lightX, lightY);
+
+            // Winkel zum Ziel mit Offset
+            const baseAngle = Math.atan2(targetY - lightY, targetX - lightX);
+            const spread = 0.4; // Breite des Lichtkegels
+
+            const leftEdge = baseAngle - spread + angleOffset;
+            const rightEdge = baseAngle + spread + angleOffset;
+            const length = 70;
+
+            ctx.lineTo(targetX + Math.cos(leftEdge) * 20, targetY + Math.sin(leftEdge) * 20);
+            ctx.lineTo(targetX + Math.cos(rightEdge) * 20, targetY + Math.sin(rightEdge) * 20);
+            ctx.closePath();
+            ctx.fill();
+
+            // Verstärktes Licht beim Beat
+            if (pulse > 0.9) {
+                ctx.fillStyle = color.replace('0.15', '0.25');
+                ctx.fill();
+            }
+
+            // Scheinwerfer-Gerät selbst
+            ctx.fillStyle = '#1a1a1a';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(lightX, lightY, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Linse (hell)
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath();
+            ctx.arc(lightX, lightY, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
         }
 
         // Zeichne minimalistische Fan-Crowd (viel voller!)
@@ -1900,7 +1998,7 @@
 
             // Mehrere Reihen bis zum unteren Rand
             const rows = 4;
-            const fansPerRow = 8;
+            const fansPerRow = 5; // Weniger Fans, um Platz für Bühne zu lassen
             const horizontalSpacing = 10;
             const verticalSpacing = 12;
 
