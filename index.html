@@ -230,14 +230,6 @@
             <button id="muteButton">🔊</button>
         </div>
 
-        <div id="instructions">
-            <h3>Steuerung:</h3>
-            <p>🖱️ Maus: Zielen</p>
-            <p>🖱️ Klick: Schießen</p>
-            <p>⌨️ Leertaste: Springen</p>
-            <p><br>Zerstöre die Schneemänner!</p>
-        </div>
-
         <div id="gameOver">
             <h1>Game Over! 🎄</h1>
             <p>Dein Score: <span id="finalScore">0</span></p>
@@ -2257,7 +2249,7 @@
 
             // Sound-Wellen (wenn Beat stark ist) - 30% kleiner
             if (pulse > 0.9) {
-                ctx.strokeStyle = `rgba(78, 205, 196, ${(pulse - 0.9) * 10})`;
+                ctx.strokeStyle = `rgba(128, 128, 128, 0.5)`;
                 ctx.lineWidth = 1.5;
                 for (let i = 0; i < 3; i++) {
                     ctx.beginPath();
@@ -2377,10 +2369,6 @@
             const scaleY = GAME_HEIGHT / rect.height;
             mouseX = (touch.clientX - rect.left) * scaleX;
             mouseY = (touch.clientY - rect.top) * scaleY;
-
-            if (gameRunning) {
-                shootSnowball();
-            }
         });
 
         canvas.addEventListener('touchmove', (e) => {
@@ -2396,17 +2384,12 @@
 
         document.getElementById('restartButton').addEventListener('click', restartGame);
 
-        // Auto-shoot für Desktop (alle 20 Frames)
+        // Auto-shoot (alle 20 Frames)
         setInterval(() => {
-            if (gameRunning && !isMobile) {
+            if (gameRunning) {
                 shootSnowball();
             }
         }, 333); // ~3 Schüsse pro Sekunde
-
-        // Verstecke Instruktionen nach 5 Sekunden
-        setTimeout(() => {
-            document.getElementById('instructions').classList.add('hidden');
-        }, 5000);
 
         // Musik Steuerung
         const bgMusic = document.getElementById('bgMusic');
