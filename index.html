@@ -1889,7 +1889,7 @@
             drawSpotlights(canvas.width - 110, canvas.height - 60, pulse);
 
             // Fan-Crowd zwischen den Scheinwerfern
-            drawFanCrowd(canvas.width - 130, canvas.height - 25, pulse);
+            drawFanCrowd(canvas.width - 130, canvas.height - 15, pulse);
 
             // Rap-Elf
             drawRapElf(canvas.width - 110, canvas.height - 40, pulse);
@@ -2002,7 +2002,10 @@
             let fanIndex = 0;
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col < fansPerRow; col++) {
-                    const fanX = x + col * horizontalSpacing;
+                    // Wellenförmiges Schwanken im Kegel
+                    const sway = Math.sin(beatPhase * 2 + col * 0.5 + row * 0.3) * 2;
+
+                    const fanX = x + col * horizontalSpacing + sway;
                     const fanY = y + row * verticalSpacing;
                     const color = colors[fanIndex % colors.length];
 
