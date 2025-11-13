@@ -1885,70 +1885,75 @@
             // Rechter Lautsprecher (gespiegelt)
             drawSpeaker(canvas.width - 42, canvas.height - 60, pulse, true);
 
-            // Fan-Crowd vor dem Elf
-            drawFanCrowd(canvas.width - 135, canvas.height - 40, pulse);
+            // Fan-Crowd vor dem Elf (voller und bis zum Rand)
+            drawFanCrowd(canvas.width - 155, canvas.height - 55, pulse);
 
             // Rap-Elf neben rechtem Lautsprecher
             drawRapElf(canvas.width - 110, canvas.height - 60, pulse);
         }
 
-        // Zeichne minimalistische Fan-Crowd
+        // Zeichne minimalistische Fan-Crowd (viel voller!)
         function drawFanCrowd(x, y, pulse) {
             ctx.save();
 
-            // 5 kleine Fans
-            const fans = [
-                { offsetX: -15, color: '#ff6b6b' },
-                { offsetX: -7, color: '#4ecdc4' },
-                { offsetX: 0, color: '#ffe66d' },
-                { offsetX: 7, color: '#a8e6cf' },
-                { offsetX: 15, color: '#ff9a8b' }
-            ];
+            const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#a8e6cf', '#ff9a8b', '#95e1d3', '#f38181', '#aa96da'];
 
-            fans.forEach((fan, i) => {
-                const fanX = x + fan.offsetX;
-                const fanY = y;
+            // Mehrere Reihen bis zum unteren Rand
+            const rows = 4;
+            const fansPerRow = 8;
+            const horizontalSpacing = 10;
+            const verticalSpacing = 12;
 
-                // Hüpfen zum Beat (abwechselnd)
-                const jump = pulse > 0.85 ? (i % 2 === 0 ? -3 : -5) : 0;
+            let fanIndex = 0;
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < fansPerRow; col++) {
+                    const fanX = x + col * horizontalSpacing;
+                    const fanY = y + row * verticalSpacing;
+                    const color = colors[fanIndex % colors.length];
 
-                // Körper (einfacher Kreis)
-                ctx.fillStyle = fan.color;
-                ctx.strokeStyle = '#000000';
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.arc(fanX, fanY + jump, 3, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
+                    // Hüpfen zum Beat (abwechselnd)
+                    const jump = pulse > 0.85 ? (fanIndex % 3 === 0 ? -3 : fanIndex % 3 === 1 ? -5 : -2) : 0;
 
-                // Kopf (kleiner Kreis oben)
-                ctx.fillStyle = '#ffd700';
-                ctx.beginPath();
-                ctx.arc(fanX, fanY - 5 + jump, 2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-
-                // Arme hoch zum Jubeln
-                ctx.strokeStyle = fan.color;
-                ctx.lineWidth = 1.5;
-                if (pulse > 0.85) {
-                    // Beide Arme hoch
+                    // Körper (einfacher Kreis)
+                    ctx.fillStyle = color;
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 1;
                     ctx.beginPath();
-                    ctx.moveTo(fanX, fanY - 2 + jump);
-                    ctx.lineTo(fanX - 3, fanY - 7 + jump);
-                    ctx.moveTo(fanX, fanY - 2 + jump);
-                    ctx.lineTo(fanX + 3, fanY - 7 + jump);
+                    ctx.arc(fanX, fanY + jump, 3, 0, Math.PI * 2);
+                    ctx.fill();
                     ctx.stroke();
-                } else {
-                    // Ein Arm oben, ein Arm zur Seite
+
+                    // Kopf (kleiner Kreis oben)
+                    ctx.fillStyle = '#ffd700';
                     ctx.beginPath();
-                    ctx.moveTo(fanX, fanY - 2 + jump);
-                    ctx.lineTo(fanX - 2, fanY - 5 + jump);
-                    ctx.moveTo(fanX, fanY - 2 + jump);
-                    ctx.lineTo(fanX + 3, fanY - 1 + jump);
+                    ctx.arc(fanX, fanY - 5 + jump, 2, 0, Math.PI * 2);
+                    ctx.fill();
                     ctx.stroke();
+
+                    // Arme hoch zum Jubeln
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 1.5;
+                    if (pulse > 0.85) {
+                        // Beide Arme hoch
+                        ctx.beginPath();
+                        ctx.moveTo(fanX, fanY - 2 + jump);
+                        ctx.lineTo(fanX - 3, fanY - 7 + jump);
+                        ctx.moveTo(fanX, fanY - 2 + jump);
+                        ctx.lineTo(fanX + 3, fanY - 7 + jump);
+                        ctx.stroke();
+                    } else {
+                        // Ein Arm oben, ein Arm zur Seite
+                        ctx.beginPath();
+                        ctx.moveTo(fanX, fanY - 2 + jump);
+                        ctx.lineTo(fanX - 2, fanY - 5 + jump);
+                        ctx.moveTo(fanX, fanY - 2 + jump);
+                        ctx.lineTo(fanX + 3, fanY - 1 + jump);
+                        ctx.stroke();
+                    }
+
+                    fanIndex++;
                 }
-            });
+            }
 
             ctx.restore();
         }
