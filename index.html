@@ -1885,17 +1885,14 @@
             // Rechter Lautsprecher (gespiegelt)
             drawSpeaker(canvas.width - 42, canvas.height - 60, pulse, true);
 
-            // Bühne für den Rap-Elf
-            drawStage(canvas.width - 120, canvas.height - 20, pulse);
-
             // Scheinwerfer-Lichtkegel (transparent, darunter)
             drawSpotlights(canvas.width - 110, canvas.height - 60, pulse);
 
-            // Fan-Crowd vor dem Elf (mit Lücke für Bühne)
-            drawFanCrowd(canvas.width - 165, canvas.height - 55, pulse);
+            // Fan-Crowd zwischen den Scheinwerfern
+            drawFanCrowd(canvas.width - 130, canvas.height - 25, pulse);
 
-            // Rap-Elf auf der Bühne
-            drawRapElf(canvas.width - 110, canvas.height - 60, pulse);
+            // Rap-Elf
+            drawRapElf(canvas.width - 110, canvas.height - 40, pulse);
         }
 
         // Zeichne Bühne
