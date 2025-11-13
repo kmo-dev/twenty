@@ -297,6 +297,8 @@
         const treeCannons = [];
         const flyingTrees = [];
         const gingerbreadMen = [];
+        const parachuteGifts = [];
+        const powerups = [];
 
         // Spawn Timer
         let snowmanSpawnTimer = 0;
@@ -309,7 +311,14 @@
         let treeCannonSpawnInterval = 900 + Math.floor(Math.random() * 300); // 15-20 Sekunden
         let gingerbreadSpawnTimer = 0;
         let gingerbreadSpawnInterval = 1200 + Math.floor(Math.random() * 600); // 20-30 Sekunden
+        let parachuteGiftSpawnTimer = 0;
+        let parachuteGiftSpawnInterval = 1800 + Math.floor(Math.random() * 600); // 30±5 Sekunden bei 60fps
         let shootCooldown = 0;
+
+        // Powerup Status
+        let powerupActive = false;
+        let powerupTimer = 0;
+        const powerupDuration = 600; // 10 Sekunden bei 60fps
 
         // Hintergrund Elemente
         const backgroundTrees = [];
@@ -555,13 +564,30 @@
             const angle = Math.atan2(mouseY - (santa.y + 30), mouseX - (santa.x + santa.width));
             const speed = 7.2;  // Nochmal 20% langsamer
 
-            snowballs.push({
-                x: santa.x + santa.width + 40 * Math.cos(angle),
-                y: santa.y + 30 + 40 * Math.sin(angle),
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed,
-                radius: 8
-            });
+            if (powerupActive) {
+                // Spread-Shot (Contra-Style): 5 Schneebälle in verschiedenen Winkeln
+                const spreadAngles = [-0.3, -0.15, 0, 0.15, 0.3]; // Winkel-Spreizung
+
+                spreadAngles.forEach(offset => {
+                    const spreadAngle = angle + offset;
+                    snowballs.push({
+                        x: santa.x + santa.width + 40 * Math.cos(spreadAngle),
+                        y: santa.y + 30 + 40 * Math.sin(spreadAngle),
+                        vx: Math.cos(spreadAngle) * speed,
+                        vy: Math.sin(spreadAngle) * speed,
+                        radius: 8
+                    });
+                });
+            } else {
+                // Normaler Schuss
+                snowballs.push({
+                    x: santa.x + santa.width + 40 * Math.cos(angle),
+                    y: santa.y + 30 + 40 * Math.sin(angle),
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: 8
+                });
+            }
 
             shootCooldown = 15; // Cooldown frames
         }
@@ -1113,6 +1139,125 @@
                     gravity: 0.2
                 });
             }
+        }
+
+        // Spawne Fallschirm-Geschenk
+        function spawnParachuteGift() {
+            const x = Math.random() * (canvas.width - 200) + 100; // Nicht zu nah am Rand
+            parachuteGifts.push({
+                x: x,
+                y: -50,
+                width: 30,
+                height: 30,
+                vy: 0.5, // Langsames Schweben
+                health: 3, // Braucht 3 Treffer
+                parachutePhase: Math.random() * Math.PI * 2 // Für Schwankung
+            });
+        }
+
+        // Zeichne Fallschirm-Geschenk
+        function drawParachuteGift(gift) {
+            ctx.save();
+
+            // Seitliches Schwanken
+            const sway = Math.sin(gift.parachutePhase) * 5;
+
+            // Fallschirm (rot-weiß gestreift)
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(gift.x + sway, gift.y - 20, 25, Math.PI, Math.PI * 2);
+            ctx.fill();
+
+            // Weiße Streifen
+            ctx.fillStyle = '#ffffff';
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                const angle = Math.PI + (i * Math.PI / 6);
+                ctx.moveTo(gift.x + sway, gift.y - 20);
+                ctx.arc(gift.x + sway, gift.y - 20, 25, angle, angle + Math.PI / 6);
+                ctx.lineTo(gift.x + sway, gift.y - 20);
+                ctx.fill();
+            }
+
+            // Fallschirm-Leinen
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(gift.x + sway - 20, gift.y - 20);
+            ctx.lineTo(gift.x, gift.y);
+            ctx.moveTo(gift.x + sway + 20, gift.y - 20);
+            ctx.lineTo(gift.x, gift.y);
+            ctx.stroke();
+
+            // Geschenk-Box (gold)
+            ctx.fillStyle = '#ffd700';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.fillRect(gift.x - 15, gift.y, 30, 30);
+            ctx.strokeRect(gift.x - 15, gift.y, 30, 30);
+
+            // Schleife (rot)
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(gift.x - 15, gift.y + 15);
+            ctx.lineTo(gift.x + 15, gift.y + 15);
+            ctx.moveTo(gift.x, gift.y);
+            ctx.lineTo(gift.x, gift.y + 30);
+            ctx.stroke();
+
+            // Schleife oben
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(gift.x - 7, gift.y - 3, 5, 0, Math.PI * 2);
+            ctx.arc(gift.x + 7, gift.y - 3, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // Zeichne Powerup
+        function drawPowerup(powerup) {
+            ctx.save();
+
+            // Pulsierender Effekt
+            const pulse = Math.sin(powerup.pulse) * 0.2 + 1;
+
+            // Stern-Form (Contra-Style)
+            ctx.fillStyle = '#00ffff';
+            ctx.strokeStyle = '#0080ff';
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * Math.PI * 2) / 5 - Math.PI / 2;
+                const x = powerup.x + Math.cos(angle) * 15 * pulse;
+                const y = powerup.y + Math.sin(angle) * 15 * pulse;
+
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+
+                // Innerer Punkt
+                const innerAngle = angle + Math.PI / 5;
+                const innerX = powerup.x + Math.cos(innerAngle) * 7 * pulse;
+                const innerY = powerup.y + Math.sin(innerAngle) * 7 * pulse;
+                ctx.lineTo(innerX, innerY);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // "S" für Spread (Contra-Style)
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 14px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('S', powerup.x, powerup.y);
+
+            ctx.restore();
         }
 
         // Zeichne fliegenden Tannenbaum
@@ -1777,6 +1922,94 @@
                 // Zufälliges nächstes Intervall
                 gingerbreadSpawnInterval = 1200 + Math.floor(Math.random() * 600);
             }
+
+            // Spawne Fallschirm-Geschenk
+            parachuteGiftSpawnTimer++;
+            if (parachuteGiftSpawnTimer >= parachuteGiftSpawnInterval) {
+                spawnParachuteGift();
+                parachuteGiftSpawnTimer = 0;
+                // Zufälliges nächstes Intervall (30±5 Sekunden)
+                parachuteGiftSpawnInterval = 1800 + Math.floor(Math.random() * 600);
+            }
+
+            // Update Fallschirm-Geschenke
+            for (let i = parachuteGifts.length - 1; i >= 0; i--) {
+                const gift = parachuteGifts[i];
+                gift.y += gift.vy;
+                gift.parachutePhase += 0.05;
+
+                // Entfernen wenn außerhalb
+                if (gift.y > canvas.height) {
+                    parachuteGifts.splice(i, 1);
+                    continue;
+                }
+
+                // Kollision mit Schneebällen
+                for (let j = snowballs.length - 1; j >= 0; j--) {
+                    const ball = snowballs[j];
+                    const dx = ball.x - gift.x;
+                    const dy = ball.y - gift.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 30) {
+                        snowballs.splice(j, 1);
+                        gift.health--;
+
+                        // Partikel-Effekt
+                        createExplosion(ball.x, ball.y, 5);
+
+                        if (gift.health <= 0) {
+                            // Geschenk zerstört - Powerup droppen
+                            powerups.push({
+                                x: gift.x,
+                                y: gift.y,
+                                vx: 0,
+                                vy: 2,
+                                pulse: 0
+                            });
+                            createConfetti(gift.x, gift.y, 20);
+                            parachuteGifts.splice(i, 1);
+                            score += 50;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Update Powerups
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                const powerup = powerups[i];
+                powerup.y += powerup.vy;
+                powerup.pulse += 0.1;
+
+                // Entfernen wenn außerhalb
+                if (powerup.y > canvas.height) {
+                    powerups.splice(i, 1);
+                    continue;
+                }
+
+                // Kollision mit Santa
+                const dx = powerup.x - (santa.x + santa.width / 2);
+                const dy = powerup.y - (santa.y + santa.height / 2);
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 40) {
+                    // Powerup eingesammelt!
+                    powerupActive = true;
+                    powerupTimer = powerupDuration;
+                    powerups.splice(i, 1);
+                    createConfetti(powerup.x, powerup.y, 30);
+                    score += 100;
+                }
+            }
+
+            // Update Powerup Timer
+            if (powerupActive) {
+                powerupTimer--;
+                if (powerupTimer <= 0) {
+                    powerupActive = false;
+                }
+            }
         }
 
         // Zeichne alles
@@ -1858,8 +2091,35 @@
             // Schneekugeln
             snowballs.forEach(drawSnowball);
 
+            // Fallschirm-Geschenke
+            parachuteGifts.forEach(drawParachuteGift);
+
+            // Powerups
+            powerups.forEach(drawPowerup);
+
             // Santa
             drawSanta();
+
+            // Powerup-Indikator (wenn aktiv)
+            if (powerupActive) {
+                const timeLeft = Math.ceil(powerupTimer / 60);
+                ctx.save();
+                ctx.fillStyle = '#00ffff';
+                ctx.strokeStyle = '#0080ff';
+                ctx.lineWidth = 2;
+                ctx.font = 'bold 16px monospace';
+                ctx.textAlign = 'left';
+                ctx.strokeText(`SPREAD: ${timeLeft}s`, 10, 80);
+                ctx.fillText(`SPREAD: ${timeLeft}s`, 10, 80);
+
+                // Pulsierender Effekt um Santa
+                ctx.globalAlpha = 0.3;
+                ctx.strokeStyle = '#00ffff';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(santa.x - 5, santa.y - 5, santa.width + 10, santa.height + 10);
+                ctx.globalAlpha = 1;
+                ctx.restore();
+            }
 
             // Lautsprecher mit Beat-Animation
             drawSpeakers();
