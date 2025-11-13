@@ -1879,11 +1879,11 @@
             beatPhase += 0.12; // 20% langsamer
             const pulse = Math.abs(Math.sin(beatPhase)) * 0.3 + 0.7; // Pulsiert zwischen 0.7 und 1.0
 
-            // Linker Lautsprecher
-            drawSpeaker(42, canvas.height - 60, pulse, false);
+            // Linker Lautsprecher (links vom Rapper)
+            drawSpeaker(canvas.width - 170, canvas.height - 60, pulse, false);
 
-            // Rechter Lautsprecher (gespiegelt)
-            drawSpeaker(canvas.width - 42, canvas.height - 60, pulse, true);
+            // Rechter Lautsprecher (rechts vom Rapper, gespiegelt)
+            drawSpeaker(canvas.width - 50, canvas.height - 60, pulse, true);
 
             // Scheinwerfer-Lichtkegel (transparent, darunter)
             drawSpotlights(canvas.width - 110, canvas.height - 60, pulse);
@@ -2003,7 +2003,7 @@
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col < fansPerRow; col++) {
                     // Wellenförmiges Schwanken im Kegel
-                    const sway = Math.sin(beatPhase * 2 + col * 0.5 + row * 0.3) * 2;
+                    const sway = Math.sin(beatPhase * 2 + col * 0.5 + row * 0.3) * 1;
 
                     const fanX = x + col * horizontalSpacing + sway;
                     const fanY = y + row * verticalSpacing;
