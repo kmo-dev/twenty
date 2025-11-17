@@ -346,6 +346,14 @@
         function drawSanta() {
             ctx.save();
 
+            // Powerup-Effekt: Farbwechselndes Leuchten
+            if (powerupActive) {
+                const colorPhase = (Date.now() / 200) % (Math.PI * 2);
+                const hue = (colorPhase / (Math.PI * 2)) * 360; // 0-360 Grad
+                ctx.shadowBlur = 20 + Math.sin(colorPhase * 2) * 5; // Pulsierende Intensität
+                ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+            }
+
             // Squash and Stretch basierend auf Sprunggeschwindigkeit
             let scaleX = 1;
             let scaleY = 1;
@@ -414,6 +422,9 @@
             ctx.fill();
 
             ctx.restore();
+
+            // Shadow-Effekt zurücksetzen (falls Powerup aktiv war)
+            ctx.shadowBlur = 0;
 
             // Waffe (Schneekanone) - separat ohne Squash/Stretch
             ctx.save();
@@ -2106,80 +2117,15 @@
                 const timeLeft = Math.ceil(powerupTimer / 60);
                 ctx.save();
 
-                // Super Saiyajin Aura - Gelbe leuchtende Energie
-                const auraPhase = (Date.now() / 50) % (Math.PI * 2);
-                const auraPulse = Math.abs(Math.sin(auraPhase)) * 0.5 + 0.5; // 0.5 - 1.0
-                const auraFlicker = Math.random() * 0.3 + 0.7; // Flackernder Effekt
-
-                const centerX = santa.x + santa.width / 2;
-                const centerY = santa.y + santa.height / 2;
-
-                // Äußere Aura (groß, sehr transparent)
-                const outerGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 80 * auraPulse);
-                outerGradient.addColorStop(0, `rgba(255, 255, 100, ${0.4 * auraFlicker})`);
-                outerGradient.addColorStop(0.3, `rgba(255, 215, 0, ${0.3 * auraFlicker})`);
-                outerGradient.addColorStop(0.6, `rgba(255, 165, 0, ${0.15 * auraFlicker})`);
-                outerGradient.addColorStop(1, 'rgba(255, 140, 0, 0)');
-                ctx.fillStyle = outerGradient;
-                ctx.fillRect(santa.x - 80, santa.y - 80, santa.width + 160, santa.height + 160);
-
-                // Mittlere Aura (intensiver)
-                const middleGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 50 * auraPulse);
-                middleGradient.addColorStop(0, `rgba(255, 255, 150, ${0.6 * auraFlicker})`);
-                middleGradient.addColorStop(0.4, `rgba(255, 220, 0, ${0.4 * auraFlicker})`);
-                middleGradient.addColorStop(1, 'rgba(255, 165, 0, 0)');
-                ctx.fillStyle = middleGradient;
-                ctx.fillRect(santa.x - 50, santa.y - 50, santa.width + 100, santa.height + 100);
-
-                // Innere Aura (sehr hell, direkt um Santa)
-                const innerGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 30);
-                innerGradient.addColorStop(0, `rgba(255, 255, 200, ${0.8 * auraFlicker})`);
-                innerGradient.addColorStop(0.5, `rgba(255, 255, 100, ${0.5 * auraFlicker})`);
-                innerGradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
-                ctx.fillStyle = innerGradient;
-                ctx.fillRect(santa.x - 30, santa.y - 30, santa.width + 60, santa.height + 60);
-
-                // Energie-Blitze (zackige Linien um Santa)
-                ctx.strokeStyle = `rgba(255, 255, 100, ${0.7 * auraFlicker})`;
+                // Timer Text
+                ctx.fillStyle = '#ffffff';
+                ctx.strokeStyle = '#000000';
                 ctx.lineWidth = 2;
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = '#ffff00';
-
-                for (let i = 0; i < 8; i++) {
-                    const angle = (i / 8) * Math.PI * 2 + auraPhase;
-                    const distance = 35 + Math.random() * 15;
-                    const x1 = centerX + Math.cos(angle) * 25;
-                    const y1 = centerY + Math.sin(angle) * 25;
-                    const x2 = centerX + Math.cos(angle) * distance;
-                    const y2 = centerY + Math.sin(angle) * distance;
-
-                    ctx.beginPath();
-                    ctx.moveTo(x1, y1);
-                    // Zackige Linie
-                    const steps = 3;
-                    for (let s = 1; s <= steps; s++) {
-                        const t = s / steps;
-                        const mx = x1 + (x2 - x1) * t + (Math.random() - 0.5) * 10;
-                        const my = y1 + (y2 - y1) * t + (Math.random() - 0.5) * 10;
-                        ctx.lineTo(mx, my);
-                    }
-                    ctx.stroke();
-                }
-
-                ctx.shadowBlur = 0;
-
-                // Timer Text (jetzt mit goldenem Stil)
-                ctx.fillStyle = '#ffff00';
-                ctx.strokeStyle = '#ff8800';
-                ctx.lineWidth = 3;
-                ctx.font = 'bold 20px Arial';
+                ctx.font = 'bold 16px monospace';
                 ctx.textAlign = 'left';
-                ctx.shadowBlur = 5;
-                ctx.shadowColor = '#ffaa00';
-                ctx.strokeText(`⚡ POWER: ${timeLeft}s`, 10, 80);
-                ctx.fillText(`⚡ POWER: ${timeLeft}s`, 10, 80);
+                ctx.strokeText(`SPREAD: ${timeLeft}s`, 10, 80);
+                ctx.fillText(`SPREAD: ${timeLeft}s`, 10, 80);
 
-                ctx.shadowBlur = 0;
                 ctx.restore();
             }
 
