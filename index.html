@@ -243,2457 +243,2462 @@
     </audio>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        document.addEventListener("shadowDOMReady", (event) => {
+            const root = event.detail.shadowRoot;
 
-        // Canvas Größe - fixe Spielfeldgröße für konsistentes Gameplay
-        const GAME_WIDTH = 1200;
-        const GAME_HEIGHT = 600;
-        canvas.width = GAME_WIDTH;
-        canvas.height = GAME_HEIGHT;
+                const canvas = root.getElementById('gameCanvas');
+                const ctx = canvas.getContext('2d');
 
-        // Canvas skalieren für verschiedene Bildschirmgrößen
-        function resizeCanvas() {
-            const scaleX = (window.innerWidth - 40) / GAME_WIDTH;
-            const scaleY = (window.innerHeight - 200) / GAME_HEIGHT;
-            const scale = Math.min(scaleX, scaleY, 1); // Max 1 (100%), nicht größer
+                // Canvas Größe - fixe Spielfeldgröße für konsistentes Gameplay
+                const GAME_WIDTH = 1200;
+                const GAME_HEIGHT = 600;
+                canvas.width = GAME_WIDTH;
+                canvas.height = GAME_HEIGHT;
 
-            canvas.style.width = (GAME_WIDTH * scale) + 'px';
-            canvas.style.height = (GAME_HEIGHT * scale) + 'px';
-        }
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
+                // Canvas skalieren für verschiedene Bildschirmgrößen
+                function resizeCanvas() {
+                    const scaleX = (window.innerWidth - 40) / GAME_WIDTH;
+                    const scaleY = (window.innerHeight - 200) / GAME_HEIGHT;
+                    const scale = Math.min(scaleX, scaleY, 1); // Max 1 (100%), nicht größer
 
-        // Spiel Variablen
-        let gameRunning = true;
-        let score = 0;
-        let mouseX = canvas.width / 2;
-        let mouseY = canvas.height / 2;
-        let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-        // Weihnachtsmann
-        const santa = {
-            x: 100,
-            y: canvas.height - 150,
-            width: 50,
-            height: 70,
-            velocityY: 0,
-            gravity: 0.8,
-            jumpPower: -15,
-            isJumping: false,
-            health: 3,
-            maxHealth: 3,
-            landingSquash: 0
-        };
-
-        // Arrays für Spielobjekte
-        const snowballs = [];
-        const snowmen = [];
-        const particles = [];
-        const snowflakes = [];
-        const reindeer = [];
-        const gifts = [];
-        const golems = [];
-        const treeCannons = [];
-        const flyingTrees = [];
-        const gingerbreadMen = [];
-        const parachuteGifts = [];
-        const powerups = [];
-
-        // Spawn Timer
-        let snowmanSpawnTimer = 0;
-        let snowmanSpawnInterval = 120; // Frames
-        let reindeerSpawnTimer = 0;
-        let reindeerSpawnInterval = 200; // Frames
-        let golemSpawnTimer = 0;
-        let golemSpawnInterval = 600 + Math.floor(Math.random() * 300); // 10-15 Sekunden bei 60fps
-        let treeCannonSpawnTimer = 0;
-        let treeCannonSpawnInterval = 900 + Math.floor(Math.random() * 300); // 15-20 Sekunden
-        let gingerbreadSpawnTimer = 0;
-        let gingerbreadSpawnInterval = 1200 + Math.floor(Math.random() * 600); // 20-30 Sekunden
-        let parachuteGiftSpawnTimer = 0;
-        let parachuteGiftSpawnInterval = 1800 + Math.floor(Math.random() * 600); // 30±5 Sekunden bei 60fps
-        let shootCooldown = 0;
-
-        // Powerup Status
-        let powerupActive = false;
-        let powerupTimer = 0;
-        const powerupDuration = 600; // 10 Sekunden bei 60fps
-
-        // Hintergrund Elemente
-        const backgroundTrees = [];
-        for (let i = 0; i < 10; i++) {
-            backgroundTrees.push({
-                x: i * 150 + Math.random() * 50,
-                y: canvas.height - 100 - Math.random() * 50,
-                size: 30 + Math.random() * 20
-            });
-        }
-
-        // Schneeflocken initialisieren
-        for (let i = 0; i < 100; i++) {
-            snowflakes.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * (canvas.height - 100),
-                speed: 0.56 + Math.random() * 1.12,  // Nochmal 20% langsamer
-                size: 2 + Math.random() * 3,
-                swing: Math.random() * Math.PI * 2,
-                swingSpeed: 0.02 + Math.random() * 0.02
-            });
-        }
-
-        // Zeichne Weihnachtsmann
-        function drawSanta() {
-            ctx.save();
-
-            // Powerup-Effekt: Farbwechselndes Leuchten
-            if (powerupActive) {
-                const colorPhase = (Date.now() / 200) % (Math.PI * 2);
-                const hue = (colorPhase / (Math.PI * 2)) * 360; // 0-360 Grad
-                ctx.shadowBlur = 20 + Math.sin(colorPhase * 2) * 5; // Pulsierende Intensität
-                ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
-            }
-
-            // Squash and Stretch basierend auf Sprunggeschwindigkeit
-            let scaleX = 1;
-            let scaleY = 1;
-
-            if (santa.isJumping) {
-                // Im Sprung: gestreckt (hoch) wenn nach oben, gestaucht beim Fallen
-                if (santa.velocityY < -5) {
-                    // Springt hoch - strecken
-                    scaleY = 1.15;
-                    scaleX = 0.9;
-                } else if (santa.velocityY > 5) {
-                    // Fällt runter - leicht strecken
-                    scaleY = 1.1;
-                    scaleX = 0.95;
+                    canvas.style.width = (GAME_WIDTH * scale) + 'px';
+                    canvas.style.height = (GAME_HEIGHT * scale) + 'px';
                 }
-            } else if (santa.landingSquash > 0) {
-                // Gerade gelandet - stauchen
-                scaleY = 0.85;
-                scaleX = 1.15;
-                santa.landingSquash--;
-            }
+                resizeCanvas();
+                window.addEventListener('resize', resizeCanvas);
 
-            // Transformation für Squash/Stretch anwenden
-            ctx.translate(santa.x + santa.width / 2, santa.y + santa.height);
-            ctx.scale(scaleX, scaleY);
-            ctx.translate(-(santa.x + santa.width / 2), -(santa.y + santa.height));
+                // Spiel Variablen
+                let gameRunning = true;
+                let score = 0;
+                let mouseX = canvas.width / 2;
+                let mouseY = canvas.height / 2;
+                let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-            // Körper (rot)
-            ctx.fillStyle = '#c41e3a';
-            ctx.fillRect(santa.x, santa.y + 20, santa.width, santa.height - 20);
+                // Weihnachtsmann
+                const santa = {
+                    x: 100,
+                    y: canvas.height - 150,
+                    width: 50,
+                    height: 70,
+                    velocityY: 0,
+                    gravity: 0.8,
+                    jumpPower: -15,
+                    isJumping: false,
+                    health: 3,
+                    maxHealth: 3,
+                    landingSquash: 0
+                };
 
-            // Gürtel (schwarz)
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(santa.x, santa.y + 50, santa.width, 8);
+                // Arrays für Spielobjekte
+                const snowballs = [];
+                const snowmen = [];
+                const particles = [];
+                const snowflakes = [];
+                const reindeer = [];
+                const gifts = [];
+                const golems = [];
+                const treeCannons = [];
+                const flyingTrees = [];
+                const gingerbreadMen = [];
+                const parachuteGifts = [];
+                const powerups = [];
 
-            // Gürtelschnalle (gold)
-            ctx.fillStyle = '#ffd700';
-            ctx.fillRect(santa.x + 17, santa.y + 48, 16, 12);
+                // Spawn Timer
+                let snowmanSpawnTimer = 0;
+                let snowmanSpawnInterval = 120; // Frames
+                let reindeerSpawnTimer = 0;
+                let reindeerSpawnInterval = 200; // Frames
+                let golemSpawnTimer = 0;
+                let golemSpawnInterval = 600 + Math.floor(Math.random() * 300); // 10-15 Sekunden bei 60fps
+                let treeCannonSpawnTimer = 0;
+                let treeCannonSpawnInterval = 900 + Math.floor(Math.random() * 300); // 15-20 Sekunden
+                let gingerbreadSpawnTimer = 0;
+                let gingerbreadSpawnInterval = 1200 + Math.floor(Math.random() * 600); // 20-30 Sekunden
+                let parachuteGiftSpawnTimer = 0;
+                let parachuteGiftSpawnInterval = 1800 + Math.floor(Math.random() * 600); // 30±5 Sekunden bei 60fps
+                let shootCooldown = 0;
 
-            // Kopf (hautfarben)
-            ctx.fillStyle = '#ffdbac';
-            ctx.beginPath();
-            ctx.arc(santa.x + santa.width / 2, santa.y + 10, 18, 0, Math.PI * 2);
-            ctx.fill();
+                // Powerup Status
+                let powerupActive = false;
+                let powerupTimer = 0;
+                const powerupDuration = 600; // 10 Sekunden bei 60fps
 
-            // Mütze (rot)
-            ctx.fillStyle = '#c41e3a';
-            ctx.beginPath();
-            ctx.moveTo(santa.x + 7, santa.y + 10);
-            ctx.lineTo(santa.x + santa.width - 7, santa.y + 10);
-            ctx.lineTo(santa.x + santa.width - 7, santa.y - 5);
-            ctx.lineTo(santa.x + 7, santa.y - 5);
-            ctx.closePath();
-            ctx.fill();
-
-            // Mützen Bommel (weiß)
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(santa.x + santa.width / 2, santa.y - 10, 6, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Bart (weiß)
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(santa.x + santa.width / 2, santa.y + 20, 12, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.restore();
-
-            // Shadow-Effekt zurücksetzen (falls Powerup aktiv war)
-            ctx.shadowBlur = 0;
-
-            // Waffe (Schneekanone) - separat ohne Squash/Stretch
-            ctx.save();
-            const angle = Math.atan2(mouseY - (santa.y + 30), mouseX - (santa.x + santa.width));
-            ctx.translate(santa.x + santa.width, santa.y + 30);
-            ctx.rotate(angle);
-
-            // Kanone
-            ctx.fillStyle = '#4a5568';
-            ctx.fillRect(0, -5, 40, 10);
-            ctx.fillStyle = '#2d3748';
-            ctx.fillRect(35, -8, 10, 16);
-
-            ctx.restore();
-        }
-
-        // Zeichne Schneemann (mit Hüpfen)
-        function drawSnowman(snowman) {
-            const drawY = snowman.y + snowman.jumpOffset;
-
-            ctx.save();
-
-            // Squash and Stretch basierend auf Hüpf-Phase
-            let scaleX = 1;
-            let scaleY = 1;
-
-            // Abs-Wert für Position: 0 = am Boden, 1 = oben in der Luft
-            const jumpHeight = Math.abs(Math.sin(snowman.jumpPhase));
-
-            if (jumpHeight > 0.7) {
-                // Oben in der Luft - strecken
-                scaleY = 1.2;
-                scaleX = 0.85;
-            } else if (jumpHeight < 0.2) {
-                // Ganz unten am Boden - stauchen
-                scaleY = 0.75;
-                scaleX = 1.3;
-            } else if (jumpHeight < 0.5) {
-                // Kurz nach dem Aufprall - noch etwas gestaucht
-                scaleY = 0.85;
-                scaleX = 1.15;
-            }
-
-            // Transformation für Squash/Stretch anwenden (vom Boden aus)
-            ctx.translate(snowman.x, drawY + 40);
-            ctx.scale(scaleX, scaleY);
-            ctx.translate(-snowman.x, -(drawY + 40));
-
-            ctx.fillStyle = '#ffffff';
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 2;
-
-            // Unterer Kreis
-            ctx.beginPath();
-            ctx.arc(snowman.x, drawY + 20, 20, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Mittlerer Kreis
-            ctx.beginPath();
-            ctx.arc(snowman.x, drawY, 15, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Kopf
-            ctx.beginPath();
-            ctx.arc(snowman.x, drawY - 15, 10, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Augen
-            ctx.fillStyle = '#000000';
-            ctx.beginPath();
-            ctx.arc(snowman.x - 4, drawY - 17, 2, 0, Math.PI * 2);
-            ctx.arc(snowman.x + 4, drawY - 17, 2, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Nase (Karotte)
-            ctx.fillStyle = '#ff6b35';
-            ctx.beginPath();
-            ctx.moveTo(snowman.x, drawY - 13);
-            ctx.lineTo(snowman.x + 10, drawY - 13);
-            ctx.lineTo(snowman.x, drawY - 11);
-            ctx.closePath();
-            ctx.fill();
-
-            // Knöpfe
-            ctx.fillStyle = '#000000';
-            for (let i = 0; i < 3; i++) {
-                ctx.beginPath();
-                ctx.arc(snowman.x, drawY - 5 + i * 7, 2, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            ctx.restore();
-        }
-
-        // Zeichne Schneekugel
-        function drawSnowball(snowball) {
-            ctx.fillStyle = '#ffffff';
-            ctx.strokeStyle = '#e0e0e0';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(snowball.x, snowball.y, snowball.radius, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Glitzer Effekt
-            ctx.fillStyle = 'rgba(173, 216, 230, 0.5)';
-            ctx.beginPath();
-            ctx.arc(snowball.x - 2, snowball.y - 2, snowball.radius / 2, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        // Zeichne Baum
-        function drawTree(tree) {
-            ctx.fillStyle = '#228b22';
-            ctx.beginPath();
-            ctx.moveTo(tree.x, tree.y);
-            ctx.lineTo(tree.x - tree.size / 2, tree.y + tree.size);
-            ctx.lineTo(tree.x + tree.size / 2, tree.y + tree.size);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.fillStyle = '#654321';
-            ctx.fillRect(tree.x - 5, tree.y + tree.size, 10, 20);
-        }
-
-        // Erstelle Partikel
-        function createParticles(x, y, color, count = 10) {
-            for (let i = 0; i < count; i++) {
-                particles.push({
-                    x: x,
-                    y: y,
-                    vx: (Math.random() - 0.5) * 5,
-                    vy: (Math.random() - 0.5) * 5,
-                    life: 60,
-                    color: color,
-                    size: Math.random() * 4 + 2
-                });
-            }
-        }
-
-        // Schieße Schneekugel
-        function shootSnowball() {
-            if (shootCooldown > 0 || !gameRunning) return;
-
-            const angle = Math.atan2(mouseY - (santa.y + 30), mouseX - (santa.x + santa.width));
-            const speed = 7.2;  // Nochmal 20% langsamer
-
-            if (powerupActive) {
-                // Spread-Shot (Contra-Style): 5 Schneebälle in verschiedenen Winkeln
-                const spreadAngles = [-0.3, -0.15, 0, 0.15, 0.3]; // Winkel-Spreizung
-
-                spreadAngles.forEach(offset => {
-                    const spreadAngle = angle + offset;
-                    snowballs.push({
-                        x: santa.x + santa.width + 40 * Math.cos(spreadAngle),
-                        y: santa.y + 30 + 40 * Math.sin(spreadAngle),
-                        vx: Math.cos(spreadAngle) * speed,
-                        vy: Math.sin(spreadAngle) * speed,
-                        radius: 8
+                // Hintergrund Elemente
+                const backgroundTrees = [];
+                for (let i = 0; i < 10; i++) {
+                    backgroundTrees.push({
+                        x: i * 150 + Math.random() * 50,
+                        y: canvas.height - 100 - Math.random() * 50,
+                        size: 30 + Math.random() * 20
                     });
-                });
-            } else {
-                // Normaler Schuss
-                snowballs.push({
-                    x: santa.x + santa.width + 40 * Math.cos(angle),
-                    y: santa.y + 30 + 40 * Math.sin(angle),
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    radius: 8
-                });
-            }
+                }
 
-            shootCooldown = 15; // Cooldown frames
-        }
+                // Schneeflocken initialisieren
+                for (let i = 0; i < 100; i++) {
+                    snowflakes.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * (canvas.height - 100),
+                        speed: 0.56 + Math.random() * 1.12,  // Nochmal 20% langsamer
+                        size: 2 + Math.random() * 3,
+                        swing: Math.random() * Math.PI * 2,
+                        swingSpeed: 0.02 + Math.random() * 0.02
+                    });
+                }
 
-        // Spawne Schneemann
-        function spawnSnowman() {
-            snowmen.push({
-                x: canvas.width + 50,
-                y: canvas.height - 120,  // Auf Bodenhöhe
-                width: 40,
-                height: 50,
-                speed: 1.1 + Math.random() * 0.8,  // Nochmal 20% langsamer
-                health: 1,
-                jumpPhase: Math.random() * Math.PI * 2,
-                jumpOffset: 0
-            });
-        }
+                // Zeichne Weihnachtsmann
+                function drawSanta() {
+                    ctx.save();
 
-        // Zeichne Golem
-        function drawGolem(golem) {
-            const drawY = golem.y;
+                    // Powerup-Effekt: Farbwechselndes Leuchten
+                    if (powerupActive) {
+                        const colorPhase = (Date.now() / 200) % (Math.PI * 2);
+                        const hue = (colorPhase / (Math.PI * 2)) * 360; // 0-360 Grad
+                        ctx.shadowBlur = 20 + Math.sin(colorPhase * 2) * 5; // Pulsierende Intensität
+                        ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+                    }
 
-            ctx.save();
+                    // Squash and Stretch basierend auf Sprunggeschwindigkeit
+                    let scaleX = 1;
+                    let scaleY = 1;
 
-            // Squash and Stretch basierend auf Walking-Phase
-            let scaleX = 1;
-            let scaleY = 1;
+                    if (santa.isJumping) {
+                        // Im Sprung: gestreckt (hoch) wenn nach oben, gestaucht beim Fallen
+                        if (santa.velocityY < -5) {
+                            // Springt hoch - strecken
+                            scaleY = 1.15;
+                            scaleX = 0.9;
+                        } else if (santa.velocityY > 5) {
+                            // Fällt runter - leicht strecken
+                            scaleY = 1.1;
+                            scaleX = 0.95;
+                        }
+                    } else if (santa.landingSquash > 0) {
+                        // Gerade gelandet - stauchen
+                        scaleY = 0.85;
+                        scaleX = 1.15;
+                        santa.landingSquash--;
+                    }
 
-            const walkValue = Math.sin(golem.walkPhase);
-            if (Math.abs(walkValue) > 0.7) {
-                // Beim Auftreten - stauchen
-                scaleY = 0.95;
-                scaleX = 1.05;
-            }
+                    // Transformation für Squash/Stretch anwenden
+                    ctx.translate(santa.x + santa.width / 2, santa.y + santa.height);
+                    ctx.scale(scaleX, scaleY);
+                    ctx.translate(-(santa.x + santa.width / 2), -(santa.y + santa.height));
 
-            // Transformation für Squash/Stretch anwenden
-            ctx.translate(golem.x, drawY + 70);
-            ctx.scale(scaleX, scaleY);
-            ctx.translate(-golem.x, -(drawY + 70));
+                    // Körper (rot)
+                    ctx.fillStyle = '#c41e3a';
+                    ctx.fillRect(santa.x, santa.y + 20, santa.width, santa.height - 20);
 
-            ctx.fillStyle = '#ffffff';
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 3;
+                    // Gürtel (schwarz)
+                    ctx.fillStyle = '#000000';
+                    ctx.fillRect(santa.x, santa.y + 50, santa.width, 8);
 
-            // Beine als Schneekugeln (einfache Hüpf-Animation)
-            // Zwei Füße an festen Positionen, einer hüpft über den anderen
-            const hopPhase = Math.sin(golem.walkPhase);
+                    // Gürtelschnalle (gold)
+                    ctx.fillStyle = '#ffd700';
+                    ctx.fillRect(santa.x + 17, santa.y + 48, 16, 12);
 
-            // Linkes Bein (Kugel) - hüpft wenn Phase positiv
-            const leftLegY = drawY + 75 - (hopPhase > 0 ? hopPhase * 15 : 0);
-            const leftLegX = golem.x - 15;
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(leftLegX, leftLegY, 14, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Rechtes Bein (Kugel) - hüpft wenn Phase negativ
-            const rightLegY = drawY + 75 - (hopPhase < 0 ? -hopPhase * 15 : 0);
-            const rightLegX = golem.x + 15;
-            ctx.beginPath();
-            ctx.arc(rightLegX, rightLegY, 14, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Unterer Körper (größer)
-            ctx.beginPath();
-            ctx.arc(golem.x, drawY + 40, 35, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Mittlerer Körper
-            ctx.beginPath();
-            ctx.arc(golem.x, drawY + 5, 28, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Kopf (groß)
-            ctx.beginPath();
-            ctx.arc(golem.x, drawY - 30, 22, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Böse Augenbrauen
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            // Linke Augenbraue (schräg nach unten)
-            ctx.moveTo(golem.x - 16, drawY - 36);
-            ctx.lineTo(golem.x - 4, drawY - 32);
-            // Rechte Augenbraue (schräg nach unten)
-            ctx.moveTo(golem.x + 4, drawY - 32);
-            ctx.lineTo(golem.x + 16, drawY - 36);
-            ctx.stroke();
-
-            // Augen (böse rot glühend)
-            ctx.fillStyle = '#ff0000';
-            ctx.shadowColor = '#ff0000';
-            ctx.shadowBlur = 8;
-            ctx.beginPath();
-            ctx.arc(golem.x - 8, drawY - 30, 5, 0, Math.PI * 2);
-            ctx.arc(golem.x + 8, drawY - 30, 5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-
-            // Pupillen (klein und böse)
-            ctx.fillStyle = '#000000';
-            ctx.beginPath();
-            ctx.arc(golem.x - 8, drawY - 30, 2, 0, Math.PI * 2);
-            ctx.arc(golem.x + 8, drawY - 30, 2, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Mund (zackig und böse)
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(golem.x - 12, drawY - 18);
-            ctx.lineTo(golem.x - 8, drawY - 22);
-            ctx.lineTo(golem.x - 4, drawY - 18);
-            ctx.lineTo(golem.x, drawY - 22);
-            ctx.lineTo(golem.x + 4, drawY - 18);
-            ctx.lineTo(golem.x + 8, drawY - 22);
-            ctx.lineTo(golem.x + 12, drawY - 18);
-            ctx.stroke();
-
-            // Zähne (spitz)
-            ctx.fillStyle = '#ffffff';
-            for (let i = -1; i <= 1; i++) {
-                ctx.beginPath();
-                ctx.moveTo(golem.x + i * 6 - 2, drawY - 18);
-                ctx.lineTo(golem.x + i * 6, drawY - 14);
-                ctx.lineTo(golem.x + i * 6 + 2, drawY - 18);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-            }
-
-            // Arme (dick)
-            ctx.fillStyle = '#ffffff';
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 3;
-
-            // Linker Arm
-            ctx.beginPath();
-            ctx.arc(golem.x - 38, drawY + 10, 12, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Rechter Arm
-            ctx.beginPath();
-            ctx.arc(golem.x + 38, drawY + 10, 12, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Knöpfe (schwarz, größer)
-            ctx.fillStyle = '#000000';
-            for (let i = 0; i < 4; i++) {
-                ctx.beginPath();
-                ctx.arc(golem.x, drawY - 5 + i * 12, 4, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // Health Bar über dem Kopf
-            const barWidth = 60;
-            const barHeight = 6;
-            const healthPercent = golem.health / golem.maxHealth;
-
-            // Hintergrund (rot)
-            ctx.fillStyle = '#ff0000';
-            ctx.fillRect(golem.x - barWidth / 2, drawY - 60, barWidth, barHeight);
-
-            // Gesundheit (grün)
-            ctx.fillStyle = '#00ff00';
-            ctx.fillRect(golem.x - barWidth / 2, drawY - 60, barWidth * healthPercent, barHeight);
-
-            // Rahmen
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(golem.x - barWidth / 2, drawY - 60, barWidth, barHeight);
-
-            ctx.restore();
-        }
-
-        // Spawne Golem
-        function spawnGolem() {
-            golems.push({
-                x: canvas.width + 100,
-                y: canvas.height - 140,  // Näher am Boden
-                width: 80,
-                height: 110,
-                speed: 0.56 + Math.random() * 0.28,  // Nochmal 20% langsamer
-                health: 5,
-                maxHealth: 5,
-                walkPhase: Math.random() * Math.PI * 2
-            });
-        }
-
-        // Erstelle Nadel-Konfetti (grün/braun)
-        function createNeedleConfetti(x, y, count = 40) {
-            const colors = ['#228b22', '#2d5016', '#654321', '#3d5c29'];
-            for (let i = 0; i < count; i++) {
-                particles.push({
-                    x: x,
-                    y: y,
-                    vx: (Math.random() - 0.5) * 10,
-                    vy: (Math.random() - 0.5) * 10 - 2,
-                    life: 60,
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    size: Math.random() * 8 + 2,
-                    rotation: Math.random() * Math.PI * 2,
-                    rotationSpeed: (Math.random() - 0.5) * 0.3,
-                    isNeedle: true
-                });
-            }
-        }
-
-        // Zeichne Baum-Kanone (ohne Rentier, gespiegelt)
-        function drawTreeCannon(cannon) {
-            ctx.save();
-
-            // Rückstoß-Offset
-            const recoilX = cannon.recoilOffset || 0;
-
-            // Fallschirm (wenn noch nicht gelandet)
-            if (!cannon.landed) {
-                const parachuteX = cannon.x;
-                const parachuteY = cannon.y - 80;
-
-                // Seile
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(parachuteX - 40, parachuteY + 30);
-                ctx.lineTo(cannon.x - 30, cannon.y + 40);
-                ctx.moveTo(parachuteX - 20, parachuteY + 30);
-                ctx.lineTo(cannon.x - 10, cannon.y + 40);
-                ctx.moveTo(parachuteX + 20, parachuteY + 30);
-                ctx.lineTo(cannon.x + 10, cannon.y + 40);
-                ctx.moveTo(parachuteX + 40, parachuteY + 30);
-                ctx.lineTo(cannon.x + 30, cannon.y + 40);
-                ctx.stroke();
-
-                // Fallschirm Kappe (rot/weiß gestreift)
-                for (let i = 0; i < 6; i++) {
-                    ctx.fillStyle = i % 2 === 0 ? '#ff0000' : '#ffffff';
+                    // Kopf (hautfarben)
+                    ctx.fillStyle = '#ffdbac';
                     ctx.beginPath();
-                    ctx.moveTo(parachuteX, parachuteY);
-                    ctx.arc(parachuteX, parachuteY + 10, 50,
-                            Math.PI + (i * Math.PI / 3),
-                            Math.PI + ((i + 1) * Math.PI / 3));
-                    ctx.lineTo(parachuteX, parachuteY);
+                    ctx.arc(santa.x + santa.width / 2, santa.y + 10, 18, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Mütze (rot)
+                    ctx.fillStyle = '#c41e3a';
+                    ctx.beginPath();
+                    ctx.moveTo(santa.x + 7, santa.y + 10);
+                    ctx.lineTo(santa.x + santa.width - 7, santa.y + 10);
+                    ctx.lineTo(santa.x + santa.width - 7, santa.y - 5);
+                    ctx.lineTo(santa.x + 7, santa.y - 5);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Mützen Bommel (weiß)
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(santa.x + santa.width / 2, santa.y - 10, 6, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Bart (weiß)
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(santa.x + santa.width / 2, santa.y + 20, 12, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.restore();
+
+                    // Shadow-Effekt zurücksetzen (falls Powerup aktiv war)
+                    ctx.shadowBlur = 0;
+
+                    // Waffe (Schneekanone) - separat ohne Squash/Stretch
+                    ctx.save();
+                    const angle = Math.atan2(mouseY - (santa.y + 30), mouseX - (santa.x + santa.width));
+                    ctx.translate(santa.x + santa.width, santa.y + 30);
+                    ctx.rotate(angle);
+
+                    // Kanone
+                    ctx.fillStyle = '#4a5568';
+                    ctx.fillRect(0, -5, 40, 10);
+                    ctx.fillStyle = '#2d3748';
+                    ctx.fillRect(35, -8, 10, 16);
+
+                    ctx.restore();
+                }
+
+                // Zeichne Schneemann (mit Hüpfen)
+                function drawSnowman(snowman) {
+                    const drawY = snowman.y + snowman.jumpOffset;
+
+                    ctx.save();
+
+                    // Squash and Stretch basierend auf Hüpf-Phase
+                    let scaleX = 1;
+                    let scaleY = 1;
+
+                    // Abs-Wert für Position: 0 = am Boden, 1 = oben in der Luft
+                    const jumpHeight = Math.abs(Math.sin(snowman.jumpPhase));
+
+                    if (jumpHeight > 0.7) {
+                        // Oben in der Luft - strecken
+                        scaleY = 1.2;
+                        scaleX = 0.85;
+                    } else if (jumpHeight < 0.2) {
+                        // Ganz unten am Boden - stauchen
+                        scaleY = 0.75;
+                        scaleX = 1.3;
+                    } else if (jumpHeight < 0.5) {
+                        // Kurz nach dem Aufprall - noch etwas gestaucht
+                        scaleY = 0.85;
+                        scaleX = 1.15;
+                    }
+
+                    // Transformation für Squash/Stretch anwenden (vom Boden aus)
+                    ctx.translate(snowman.x, drawY + 40);
+                    ctx.scale(scaleX, scaleY);
+                    ctx.translate(-snowman.x, -(drawY + 40));
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2;
+
+                    // Unterer Kreis
+                    ctx.beginPath();
+                    ctx.arc(snowman.x, drawY + 20, 20, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Mittlerer Kreis
+                    ctx.beginPath();
+                    ctx.arc(snowman.x, drawY, 15, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Kopf
+                    ctx.beginPath();
+                    ctx.arc(snowman.x, drawY - 15, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Augen
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(snowman.x - 4, drawY - 17, 2, 0, Math.PI * 2);
+                    ctx.arc(snowman.x + 4, drawY - 17, 2, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Nase (Karotte)
+                    ctx.fillStyle = '#ff6b35';
+                    ctx.beginPath();
+                    ctx.moveTo(snowman.x, drawY - 13);
+                    ctx.lineTo(snowman.x + 10, drawY - 13);
+                    ctx.lineTo(snowman.x, drawY - 11);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Knöpfe
+                    ctx.fillStyle = '#000000';
+                    for (let i = 0; i < 3; i++) {
+                        ctx.beginPath();
+                        ctx.arc(snowman.x, drawY - 5 + i * 7, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    ctx.restore();
+                }
+
+                // Zeichne Schneekugel
+                function drawSnowball(snowball) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.strokeStyle = '#e0e0e0';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(snowball.x, snowball.y, snowball.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Glitzer Effekt
+                    ctx.fillStyle = 'rgba(173, 216, 230, 0.5)';
+                    ctx.beginPath();
+                    ctx.arc(snowball.x - 2, snowball.y - 2, snowball.radius / 2, 0, Math.PI * 2);
                     ctx.fill();
                 }
 
-                // Fallschirm Umriss
-                ctx.strokeStyle = '#000000';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(parachuteX, parachuteY + 10, 50, Math.PI, Math.PI * 2);
-                ctx.stroke();
-            }
+                // Zeichne Baum
+                function drawTree(tree) {
+                    ctx.fillStyle = '#228b22';
+                    ctx.beginPath();
+                    ctx.moveTo(tree.x, tree.y);
+                    ctx.lineTo(tree.x - tree.size / 2, tree.y + tree.size);
+                    ctx.lineTo(tree.x + tree.size / 2, tree.y + tree.size);
+                    ctx.closePath();
+                    ctx.fill();
 
-            // Kanone (größer und dynamisch auf Santa gerichtet)
-            const cannonX = cannon.x + recoilX;
-            // Berechne Winkel zu Santa
-            const dx = santa.x + santa.width / 2 - cannon.x;
-            const dy = santa.y + santa.height / 2 - cannon.y;
-            const cannonAngle = Math.atan2(dy, dx) + 0.08; // Höher zielen
-
-            // Kanonen-Basis (Holz) - größer
-            ctx.fillStyle = '#654321';
-            ctx.fillRect(cannonX - 50, cannon.y + 40, 120, 40);
-
-            // Räder (größer)
-            ctx.fillStyle = '#2d1810';
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.arc(cannonX - 30, cannon.y + 80, 14, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(cannonX + 50, cannon.y + 80, 14, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Kanonen-Rohr (rotiert dynamisch auf Santa)
-            ctx.save();
-            ctx.translate(cannonX + 10, cannon.y + 50);
-            ctx.rotate(cannonAngle);
-
-            // Rohr (länger und dicker) - in Schussrichtung
-            ctx.fillStyle = '#2d3748';
-            ctx.fillRect(0, -15, 100, 30);  // Von 0 bis 100 in Schussrichtung
-
-            // Kanonenmündung (am vorderen Ende)
-            ctx.fillStyle = '#1a202c';
-            ctx.fillRect(100, -20, 15, 40);
-
-            // Verzierung (Metallringe)
-            ctx.strokeStyle = '#4a5568';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.arc(35, 0, 18, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(70, 0, 18, 0, Math.PI * 2);
-            ctx.stroke();
-
-            ctx.restore();
-
-            // Health Bar über der Kanone
-            const barWidth = 100;
-            const barHeight = 8;
-            const healthPercent = cannon.health / cannon.maxHealth;
-
-            // Hintergrund (rot)
-            ctx.fillStyle = '#ff0000';
-            ctx.fillRect(cannon.x - barWidth / 2, cannon.y, barWidth, barHeight);
-
-            // Gesundheit (grün)
-            ctx.fillStyle = '#00ff00';
-            ctx.fillRect(cannon.x - barWidth / 2, cannon.y, barWidth * healthPercent, barHeight);
-
-            // Rahmen
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(cannon.x - barWidth / 2, cannon.y, barWidth, barHeight);
-
-            ctx.restore();
-        }
-
-        // Spawne Baum-Kanone
-        function spawnTreeCannon() {
-            treeCannons.push({
-                x: canvas.width - 200,  // Rechts im Bild
-                y: -150,  // Startet oben außerhalb des Bildschirms
-                width: 200,
-                height: 100,
-                fallSpeed: 1.5,  // Langsamer Fall mit Fallschirm
-                landed: false,  // Noch nicht gelandet
-                groundY: canvas.height - 180,  // Ziel-Y-Position am Boden
-                health: 10,
-                maxHealth: 10,
-                shootTimer: 60 + Math.floor(Math.random() * 40),  // Schießt schnell
-                recoilOffset: 0,
-                swingPhase: Math.random() * Math.PI * 2  // Für Wind-Schwanken
-            });
-        }
-
-        // Zeichne Lebkuchenmann (riesiger Boss)
-        function drawGingerbreadMan(gingerbread) {
-            ctx.save();
-
-            // Gehanimation
-            gingerbread.walkPhase = (gingerbread.walkPhase || 0) + 0.08;
-            const bounce = Math.abs(Math.sin(gingerbread.walkPhase)) * 8;
-
-            const drawY = gingerbread.y - bounce;
-
-            // Körper (großer Lebkuchenmann)
-            ctx.fillStyle = '#8B4513'; // Lebkuchenbraun
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 4;
-
-            // Beine (zwei große runde Beine mit Bewegung)
-            const legSwing = Math.sin(gingerbread.walkPhase) * 15;
-            const legLift = Math.abs(Math.sin(gingerbread.walkPhase * 2)) * 12;
-
-            // Linkes Bein (hebt sich abwechselnd)
-            const leftLegY = drawY + 100 + (legSwing > 0 ? legLift : 0);
-            ctx.beginPath();
-            ctx.ellipse(gingerbread.x - 30, leftLegY, 25, 40, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Rechtes Bein (hebt sich abwechselnd)
-            const rightLegY = drawY + 100 + (legSwing < 0 ? legLift : 0);
-            ctx.beginPath();
-            ctx.ellipse(gingerbread.x + 30, rightLegY, 25, 40, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Körper (großer gerundeter Körper)
-            ctx.beginPath();
-            ctx.ellipse(gingerbread.x, drawY + 20, 70, 90, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Kopf (großer runder Kopf)
-            ctx.beginPath();
-            ctx.arc(gingerbread.x, drawY - 80, 50, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Arme (dick und rund mit Schwing-Animation von der Schulter)
-            const armSwing = Math.sin(gingerbread.walkPhase) * 0.4; // Rotation
-
-            // Linker Arm (rotiert von Schulter aus)
-            ctx.save();
-            ctx.translate(gingerbread.x - 70, drawY - 50); // Schulterposition
-            ctx.rotate(-0.3 - armSwing); // Rotation von Schulter
-            ctx.beginPath();
-            ctx.ellipse(0, 40, 20, 50, 0, 0, Math.PI * 2); // Arm hängt nach unten von Schulter
-            ctx.fill();
-            ctx.stroke();
-
-            // Zuckerguss-Knopf auf linkem Arm
-            ctx.fillStyle = '#ffffff';
-            ctx.strokeStyle = '#cccccc';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 40, 6, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-            ctx.restore();
-
-            // Rechter Arm (rotiert von Schulter aus)
-            ctx.save();
-            ctx.translate(gingerbread.x + 70, drawY - 50); // Schulterposition
-            ctx.rotate(0.3 + armSwing); // Rotation von Schulter
-            ctx.fillStyle = '#8B4513';
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.ellipse(0, 40, 20, 50, 0, 0, Math.PI * 2); // Arm hängt nach unten von Schulter
-            ctx.fill();
-            ctx.stroke();
-
-            // Zuckerguss-Knopf auf rechtem Arm
-            ctx.fillStyle = '#ffffff';
-            ctx.strokeStyle = '#cccccc';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 40, 6, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-            ctx.restore();
-
-            // Zuckerguss-Dekoration (weiß)
-            ctx.fillStyle = '#ffffff';
-            ctx.strokeStyle = '#cccccc';
-            ctx.lineWidth = 2;
-
-            // Knöpfe auf dem Körper (3 große runde Knöpfe)
-            for (let i = 0; i < 3; i++) {
-                ctx.beginPath();
-                ctx.arc(gingerbread.x, drawY - 20 + i * 30, 10, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-            }
-
-            // BÖSE Augenbrauen (schräg nach unten)
-            ctx.fillStyle = '#000000';
-            ctx.beginPath();
-            // Linke Augenbraue (schräg und dick)
-            ctx.moveTo(gingerbread.x - 32, drawY - 92);
-            ctx.lineTo(gingerbread.x - 12, drawY - 88);
-            ctx.lineTo(gingerbread.x - 12, drawY - 84);
-            ctx.lineTo(gingerbread.x - 32, drawY - 88);
-            ctx.closePath();
-            ctx.fill();
-            // Rechte Augenbraue (schräg und dick)
-            ctx.moveTo(gingerbread.x + 12, drawY - 88);
-            ctx.lineTo(gingerbread.x + 32, drawY - 92);
-            ctx.lineTo(gingerbread.x + 32, drawY - 88);
-            ctx.lineTo(gingerbread.x + 12, drawY - 84);
-            ctx.closePath();
-            ctx.fill();
-
-            // Augen (schwarz, groß und böse - keine weißen Punkte mehr)
-            ctx.fillStyle = '#ff0000'; // Rote glühende Augen
-            ctx.shadowColor = '#ff0000';
-            ctx.shadowBlur = 10;
-            ctx.beginPath();
-            ctx.arc(gingerbread.x - 20, drawY - 85, 8, 0, Math.PI * 2);
-            ctx.arc(gingerbread.x + 20, drawY - 85, 8, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-
-            // Pupillen (klein und böse)
-            ctx.fillStyle = '#000000';
-            ctx.beginPath();
-            ctx.arc(gingerbread.x - 20, drawY - 85, 3, 0, Math.PI * 2);
-            ctx.arc(gingerbread.x + 20, drawY - 85, 3, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Böser Mund (zackig nach unten)
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(gingerbread.x - 18, drawY - 72);
-            ctx.lineTo(gingerbread.x - 12, drawY - 68);
-            ctx.lineTo(gingerbread.x - 6, drawY - 72);
-            ctx.lineTo(gingerbread.x, drawY - 68);
-            ctx.lineTo(gingerbread.x + 6, drawY - 72);
-            ctx.lineTo(gingerbread.x + 12, drawY - 68);
-            ctx.lineTo(gingerbread.x + 18, drawY - 72);
-            ctx.stroke();
-
-            // Health Bar über dem Kopf
-            const barWidth = 100;
-            const barHeight = 10;
-            const healthPercent = gingerbread.health / gingerbread.maxHealth;
-
-            // Hintergrund (rot)
-            ctx.fillStyle = '#ff0000';
-            ctx.fillRect(gingerbread.x - barWidth / 2, drawY - 140, barWidth, barHeight);
-
-            // Gesundheit (grün)
-            ctx.fillStyle = '#00ff00';
-            ctx.fillRect(gingerbread.x - barWidth / 2, drawY - 140, barWidth * healthPercent, barHeight);
-
-            // Rahmen
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(gingerbread.x - barWidth / 2, drawY - 140, barWidth, barHeight);
-
-            ctx.restore();
-        }
-
-        // Spawne Lebkuchenmann
-        function spawnGingerbreadMan() {
-            gingerbreadMen.push({
-                x: canvas.width + 100,
-                y: canvas.height - 240,  // Größer, also höhere Position
-                width: 180,
-                height: 240,
-                vx: -0.56,  // Nochmal 20% langsamer
-                health: 20,
-                maxHealth: 20,
-                walkPhase: 0
-            });
-        }
-
-        // Braune Krümel-Partikel für Lebkuchenmann-Explosion
-        function createGingerbreadCrumbs(x, y, count) {
-            for (let i = 0; i < count; i++) {
-                const angle = (Math.PI * 2 * i) / count;
-                const speed = 2 + Math.random() * 4;
-                particles.push({
-                    x: x,
-                    y: y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed - Math.random() * 2,
-                    size: 3 + Math.random() * 5,
-                    color: ['#8B4513', '#A0522D', '#D2691E'][Math.floor(Math.random() * 3)],  // Verschiedene Brauntöne
-                    life: 60,
-                    gravity: 0.2
-                });
-            }
-        }
-
-        // Spawne Fallschirm-Geschenk
-        function spawnParachuteGift() {
-            // Spawne immer über dem Weihnachtsmann
-            const x = santa.x + santa.width / 2;
-            parachuteGifts.push({
-                x: x,
-                y: -50,
-                width: 30,
-                height: 30,
-                vy: 0.5, // Langsames Schweben
-                health: 3, // Braucht 3 Treffer
-                parachutePhase: Math.random() * Math.PI * 2 // Für Schwankung
-            });
-        }
-
-        // Zeichne Fallschirm-Geschenk
-        function drawParachuteGift(gift) {
-            ctx.save();
-
-            // Seitliches Schwanken
-            const sway = Math.sin(gift.parachutePhase) * 5;
-
-            // Fallschirm (rot-weiß gestreift)
-            ctx.fillStyle = '#ff0000';
-            ctx.beginPath();
-            ctx.arc(gift.x + sway, gift.y - 20, 25, Math.PI, Math.PI * 2);
-            ctx.fill();
-
-            // Weiße Streifen
-            ctx.fillStyle = '#ffffff';
-            for (let i = 0; i < 3; i++) {
-                ctx.beginPath();
-                const angle = Math.PI + (i * Math.PI / 6);
-                ctx.moveTo(gift.x + sway, gift.y - 20);
-                ctx.arc(gift.x + sway, gift.y - 20, 25, angle, angle + Math.PI / 6);
-                ctx.lineTo(gift.x + sway, gift.y - 20);
-                ctx.fill();
-            }
-
-            // Fallschirm-Leinen
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(gift.x + sway - 20, gift.y - 20);
-            ctx.lineTo(gift.x, gift.y);
-            ctx.moveTo(gift.x + sway + 20, gift.y - 20);
-            ctx.lineTo(gift.x, gift.y);
-            ctx.stroke();
-
-            // Geschenk-Box (gold)
-            ctx.fillStyle = '#ffd700';
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 2;
-            ctx.fillRect(gift.x - 15, gift.y, 30, 30);
-            ctx.strokeRect(gift.x - 15, gift.y, 30, 30);
-
-            // Schleife (rot)
-            ctx.strokeStyle = '#ff0000';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(gift.x - 15, gift.y + 15);
-            ctx.lineTo(gift.x + 15, gift.y + 15);
-            ctx.moveTo(gift.x, gift.y);
-            ctx.lineTo(gift.x, gift.y + 30);
-            ctx.stroke();
-
-            // Schleife oben
-            ctx.fillStyle = '#ff0000';
-            ctx.beginPath();
-            ctx.arc(gift.x - 7, gift.y - 3, 5, 0, Math.PI * 2);
-            ctx.arc(gift.x + 7, gift.y - 3, 5, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.restore();
-        }
-
-        // Zeichne Powerup
-        function drawPowerup(powerup) {
-            ctx.save();
-
-            // Pulsierender Effekt
-            const pulse = Math.sin(powerup.pulse) * 0.2 + 1;
-
-            // Stern-Form (Contra-Style)
-            ctx.fillStyle = '#00ffff';
-            ctx.strokeStyle = '#0080ff';
-            ctx.lineWidth = 2;
-
-            ctx.beginPath();
-            for (let i = 0; i < 5; i++) {
-                const angle = (i * Math.PI * 2) / 5 - Math.PI / 2;
-                const x = powerup.x + Math.cos(angle) * 15 * pulse;
-                const y = powerup.y + Math.sin(angle) * 15 * pulse;
-
-                if (i === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
+                    ctx.fillStyle = '#654321';
+                    ctx.fillRect(tree.x - 5, tree.y + tree.size, 10, 20);
                 }
 
-                // Innerer Punkt
-                const innerAngle = angle + Math.PI / 5;
-                const innerX = powerup.x + Math.cos(innerAngle) * 7 * pulse;
-                const innerY = powerup.y + Math.sin(innerAngle) * 7 * pulse;
-                ctx.lineTo(innerX, innerY);
-            }
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-
-            // "S" für Spread (Contra-Style)
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 14px monospace';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('S', powerup.x, powerup.y);
-
-            ctx.restore();
-        }
-
-        // Zeichne fliegenden Tannenbaum
-        function drawFlyingTree(tree) {
-            ctx.save();
-
-            // Rotation für Flug-Effekt
-            ctx.translate(tree.x, tree.y);
-            ctx.rotate(tree.rotation);
-
-            // Baumstamm
-            ctx.fillStyle = '#654321';
-            ctx.fillRect(-5, 0, 10, 25);
-
-            // Baum (grün, Dreieck)
-            ctx.fillStyle = '#228b22';
-            ctx.strokeStyle = '#1a5c1a';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(0, -35);
-            ctx.lineTo(-15, 0);
-            ctx.lineTo(15, 0);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-
-            // Zweiter Abschnitt
-            ctx.beginPath();
-            ctx.moveTo(0, -25);
-            ctx.lineTo(-12, -5);
-            ctx.lineTo(12, -5);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.restore();
-        }
-
-        // Zeichne Rentier
-        function drawReindeer(deer) {
-            ctx.save();
-
-            // Körper (braun)
-            ctx.fillStyle = '#8B4513';
-            ctx.fillRect(deer.x, deer.y, 40, 20);
-
-            // Kopf
-            ctx.fillRect(deer.x - 15, deer.y + 5, 20, 15);
-
-            // Geweih
-            ctx.strokeStyle = '#654321';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(deer.x - 10, deer.y + 5);
-            ctx.lineTo(deer.x - 15, deer.y - 10);
-            ctx.moveTo(deer.x - 5, deer.y + 5);
-            ctx.lineTo(deer.x - 10, deer.y - 8);
-            ctx.stroke();
-
-            // Nase (rot)
-            ctx.fillStyle = '#ff0000';
-            ctx.beginPath();
-            ctx.arc(deer.x - 15, deer.y + 12, 3, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Beine
-            ctx.fillStyle = '#8B4513';
-            ctx.fillRect(deer.x + 5, deer.y + 20, 5, 10);
-            ctx.fillRect(deer.x + 20, deer.y + 20, 5, 10);
-
-            // Schlitten
-            ctx.fillStyle = '#c41e3a';
-            ctx.fillRect(deer.x + 50, deer.y + 5, 30, 20);
-            ctx.fillStyle = '#654321';
-            ctx.beginPath();
-            ctx.arc(deer.x + 55, deer.y + 25, 5, 0, Math.PI * 2);
-            ctx.arc(deer.x + 75, deer.y + 25, 5, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Geschenk im Schlitten
-            ctx.fillStyle = '#ffd700';
-            ctx.fillRect(deer.x + 58, deer.y + 10, 15, 12);
-            ctx.strokeStyle = '#ff0000';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(deer.x + 58, deer.y + 16);
-            ctx.lineTo(deer.x + 73, deer.y + 16);
-            ctx.moveTo(deer.x + 65.5, deer.y + 10);
-            ctx.lineTo(deer.x + 65.5, deer.y + 22);
-            ctx.stroke();
-
-            ctx.restore();
-        }
-
-        // Zeichne Geschenk
-        function drawGift(gift) {
-            ctx.save();
-
-            // Geschenk Box
-            ctx.fillStyle = gift.color;
-            ctx.fillRect(gift.x - 10, gift.y - 10, 20, 20);
-
-            // Schleife
-            ctx.strokeStyle = '#ff0000';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(gift.x - 10, gift.y);
-            ctx.lineTo(gift.x + 10, gift.y);
-            ctx.moveTo(gift.x, gift.y - 10);
-            ctx.lineTo(gift.x, gift.y + 10);
-            ctx.stroke();
-
-            // Schleife oben
-            ctx.fillStyle = '#ff0000';
-            ctx.beginPath();
-            ctx.arc(gift.x - 5, gift.y - 12, 4, 0, Math.PI * 2);
-            ctx.arc(gift.x + 5, gift.y - 12, 4, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.restore();
-        }
-
-        // Spawne Rentier
-        function spawnReindeer() {
-            reindeer.push({
-                x: canvas.width + 100,
-                y: 50 + Math.random() * 100,
-                speed: 0.56 + Math.random() * 0.28,  // Nochmal 20% langsamer
-                dropTimer: 60 + Math.floor(Math.random() * 60)
-            });
-        }
-
-        // Erstelle Konfetti
-        function createConfetti(x, y, count = 30) {
-            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500', '#ff69b4'];
-            for (let i = 0; i < count; i++) {
-                particles.push({
-                    x: x,
-                    y: y,
-                    vx: (Math.random() - 0.5) * 8,
-                    vy: (Math.random() - 0.5) * 8 - 2,
-                    life: 60,
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    size: Math.random() * 5 + 2,
-                    rotation: Math.random() * Math.PI * 2,
-                    rotationSpeed: (Math.random() - 0.5) * 0.2
-                });
-            }
-        }
-
-        // Update Spiel
-        function update() {
-            if (!gameRunning) return;
-
-            // Update Cooldowns
-            if (shootCooldown > 0) shootCooldown--;
-
-            // Update Santa
-            santa.velocityY += santa.gravity;
-            santa.y += santa.velocityY;
-
-            // Boden Kollision
-            const ground = canvas.height - 150;
-            if (santa.y >= ground) {
-                if (santa.isJumping) {
-                    // Gerade gelandet - Squash-Effekt triggern
-                    santa.landingSquash = 5;
-                }
-                santa.y = ground;
-                santa.velocityY = 0;
-                santa.isJumping = false;
-            }
-
-            // Update Schneekugeln
-            for (let i = snowballs.length - 1; i >= 0; i--) {
-                const ball = snowballs[i];
-                ball.x += ball.vx;
-                ball.y += ball.vy;
-
-                // Entferne wenn außerhalb
-                if (ball.x > canvas.width + 50 || ball.x < -50 || ball.y > canvas.height + 50 || ball.y < -50) {
-                    snowballs.splice(i, 1);
-                }
-            }
-
-            // Update Schneemänner
-            for (let i = snowmen.length - 1; i >= 0; i--) {
-                const snowman = snowmen[i];
-                snowman.x -= snowman.speed;
-
-                // Hüpf-Animation (langsamer)
-                snowman.jumpPhase += 0.05;
-                snowman.jumpOffset = -Math.abs(Math.sin(snowman.jumpPhase)) * 15;
-
-                // Entferne wenn zu weit links
-                if (snowman.x < -100) {
-                    snowmen.splice(i, 1);
-                    continue;
-                }
-
-                // Kollision mit Santa
-                if (snowman.x < santa.x + santa.width &&
-                    snowman.x + snowman.width > santa.x &&
-                    snowman.y + snowman.jumpOffset < santa.y + santa.height &&
-                    snowman.y + snowman.jumpOffset + snowman.height > santa.y) {
-                    santa.health--;
-                    createParticles(snowman.x, snowman.y, '#ff0000', 15);
-                    snowmen.splice(i, 1);
-
-                    if (santa.health <= 0) {
-                        gameOver();
-                    }
-                    continue;
-                }
-
-                // Kollision mit Schneekugeln
-                for (let j = snowballs.length - 1; j >= 0; j--) {
-                    const ball = snowballs[j];
-                    const dx = ball.x - snowman.x;
-                    const dy = ball.y - (snowman.y + snowman.jumpOffset);
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < ball.radius + 25) {
-                        createParticles(snowman.x, snowman.y + snowman.jumpOffset, '#ffffff', 20);
-                        snowmen.splice(i, 1);
-                        snowballs.splice(j, 1);
-                        score += 10;
-                        document.getElementById('score').textContent = score;
-                        break;
-                    }
-                }
-            }
-
-            // Update Golems
-            for (let i = golems.length - 1; i >= 0; i--) {
-                const golem = golems[i];
-                golem.x -= golem.speed;
-
-                // Walking Animation
-                golem.walkPhase += 0.08;
-
-                // Entferne wenn zu weit links
-                if (golem.x < -150) {
-                    golems.splice(i, 1);
-                    continue;
-                }
-
-                // Kollision mit Santa
-                if (golem.x < santa.x + santa.width &&
-                    golem.x + golem.width > santa.x &&
-                    golem.y < santa.y + santa.height &&
-                    golem.y + golem.height > santa.y) {
-                    santa.health--;
-                    createParticles(golem.x, golem.y + 50, '#ff0000', 20);
-                    // Golem wird nicht zerstört bei Kollision - zu stark!
-
-                    if (santa.health <= 0) {
-                        gameOver();
+                // Erstelle Partikel
+                function createParticles(x, y, color, count = 10) {
+                    for (let i = 0; i < count; i++) {
+                        particles.push({
+                            x: x,
+                            y: y,
+                            vx: (Math.random() - 0.5) * 5,
+                            vy: (Math.random() - 0.5) * 5,
+                            life: 60,
+                            color: color,
+                            size: Math.random() * 4 + 2
+                        });
                     }
                 }
 
-                // Kollision mit Schneekugeln
-                for (let j = snowballs.length - 1; j >= 0; j--) {
-                    const ball = snowballs[j];
-                    const dx = ball.x - golem.x;
-                    const dy = ball.y - (golem.y + 40);
-                    const distance = Math.sqrt(dx * dx + dy * dy);
+                // Schieße Schneekugel
+                function shootSnowball() {
+                    if (shootCooldown > 0 || !gameRunning) return;
 
-                    if (distance < ball.radius + 40) {
-                        golem.health--;
-                        createParticles(ball.x, ball.y, '#ffffff', 15);
-                        snowballs.splice(j, 1);
+                    const angle = Math.atan2(mouseY - (santa.y + 30), mouseX - (santa.x + santa.width));
+                    const speed = 7.2;  // Nochmal 20% langsamer
 
-                        if (golem.health <= 0) {
-                            // Golem besiegt - große Explosion!
-                            createParticles(golem.x, golem.y + 50, '#ffffff', 40);
-                            createConfetti(golem.x, golem.y + 50, 50);
-                            golems.splice(i, 1);
-                            score += 50;
-                            document.getElementById('score').textContent = score;
+                    if (powerupActive) {
+                        // Spread-Shot (Contra-Style): 5 Schneebälle in verschiedenen Winkeln
+                        const spreadAngles = [-0.3, -0.15, 0, 0.15, 0.3]; // Winkel-Spreizung
+
+                        spreadAngles.forEach(offset => {
+                            const spreadAngle = angle + offset;
+                            snowballs.push({
+                                x: santa.x + santa.width + 40 * Math.cos(spreadAngle),
+                                y: santa.y + 30 + 40 * Math.sin(spreadAngle),
+                                vx: Math.cos(spreadAngle) * speed,
+                                vy: Math.sin(spreadAngle) * speed,
+                                radius: 8
+                            });
+                        });
+                    } else {
+                        // Normaler Schuss
+                        snowballs.push({
+                            x: santa.x + santa.width + 40 * Math.cos(angle),
+                            y: santa.y + 30 + 40 * Math.sin(angle),
+                            vx: Math.cos(angle) * speed,
+                            vy: Math.sin(angle) * speed,
+                            radius: 8
+                        });
+                    }
+
+                    shootCooldown = 15; // Cooldown frames
+                }
+
+                // Spawne Schneemann
+                function spawnSnowman() {
+                    snowmen.push({
+                        x: canvas.width + 50,
+                        y: canvas.height - 120,  // Auf Bodenhöhe
+                        width: 40,
+                        height: 50,
+                        speed: 1.1 + Math.random() * 0.8,  // Nochmal 20% langsamer
+                        health: 1,
+                        jumpPhase: Math.random() * Math.PI * 2,
+                        jumpOffset: 0
+                    });
+                }
+
+                // Zeichne Golem
+                function drawGolem(golem) {
+                    const drawY = golem.y;
+
+                    ctx.save();
+
+                    // Squash and Stretch basierend auf Walking-Phase
+                    let scaleX = 1;
+                    let scaleY = 1;
+
+                    const walkValue = Math.sin(golem.walkPhase);
+                    if (Math.abs(walkValue) > 0.7) {
+                        // Beim Auftreten - stauchen
+                        scaleY = 0.95;
+                        scaleX = 1.05;
+                    }
+
+                    // Transformation für Squash/Stretch anwenden
+                    ctx.translate(golem.x, drawY + 70);
+                    ctx.scale(scaleX, scaleY);
+                    ctx.translate(-golem.x, -(drawY + 70));
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 3;
+
+                    // Beine als Schneekugeln (einfache Hüpf-Animation)
+                    // Zwei Füße an festen Positionen, einer hüpft über den anderen
+                    const hopPhase = Math.sin(golem.walkPhase);
+
+                    // Linkes Bein (Kugel) - hüpft wenn Phase positiv
+                    const leftLegY = drawY + 75 - (hopPhase > 0 ? hopPhase * 15 : 0);
+                    const leftLegX = golem.x - 15;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(leftLegX, leftLegY, 14, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Rechtes Bein (Kugel) - hüpft wenn Phase negativ
+                    const rightLegY = drawY + 75 - (hopPhase < 0 ? -hopPhase * 15 : 0);
+                    const rightLegX = golem.x + 15;
+                    ctx.beginPath();
+                    ctx.arc(rightLegX, rightLegY, 14, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Unterer Körper (größer)
+                    ctx.beginPath();
+                    ctx.arc(golem.x, drawY + 40, 35, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Mittlerer Körper
+                    ctx.beginPath();
+                    ctx.arc(golem.x, drawY + 5, 28, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Kopf (groß)
+                    ctx.beginPath();
+                    ctx.arc(golem.x, drawY - 30, 22, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Böse Augenbrauen
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    // Linke Augenbraue (schräg nach unten)
+                    ctx.moveTo(golem.x - 16, drawY - 36);
+                    ctx.lineTo(golem.x - 4, drawY - 32);
+                    // Rechte Augenbraue (schräg nach unten)
+                    ctx.moveTo(golem.x + 4, drawY - 32);
+                    ctx.lineTo(golem.x + 16, drawY - 36);
+                    ctx.stroke();
+
+                    // Augen (böse rot glühend)
+                    ctx.fillStyle = '#ff0000';
+                    ctx.shadowColor = '#ff0000';
+                    ctx.shadowBlur = 8;
+                    ctx.beginPath();
+                    ctx.arc(golem.x - 8, drawY - 30, 5, 0, Math.PI * 2);
+                    ctx.arc(golem.x + 8, drawY - 30, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+
+                    // Pupillen (klein und böse)
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(golem.x - 8, drawY - 30, 2, 0, Math.PI * 2);
+                    ctx.arc(golem.x + 8, drawY - 30, 2, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Mund (zackig und böse)
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(golem.x - 12, drawY - 18);
+                    ctx.lineTo(golem.x - 8, drawY - 22);
+                    ctx.lineTo(golem.x - 4, drawY - 18);
+                    ctx.lineTo(golem.x, drawY - 22);
+                    ctx.lineTo(golem.x + 4, drawY - 18);
+                    ctx.lineTo(golem.x + 8, drawY - 22);
+                    ctx.lineTo(golem.x + 12, drawY - 18);
+                    ctx.stroke();
+
+                    // Zähne (spitz)
+                    ctx.fillStyle = '#ffffff';
+                    for (let i = -1; i <= 1; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(golem.x + i * 6 - 2, drawY - 18);
+                        ctx.lineTo(golem.x + i * 6, drawY - 14);
+                        ctx.lineTo(golem.x + i * 6 + 2, drawY - 18);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                    }
+
+                    // Arme (dick)
+                    ctx.fillStyle = '#ffffff';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 3;
+
+                    // Linker Arm
+                    ctx.beginPath();
+                    ctx.arc(golem.x - 38, drawY + 10, 12, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Rechter Arm
+                    ctx.beginPath();
+                    ctx.arc(golem.x + 38, drawY + 10, 12, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Knöpfe (schwarz, größer)
+                    ctx.fillStyle = '#000000';
+                    for (let i = 0; i < 4; i++) {
+                        ctx.beginPath();
+                        ctx.arc(golem.x, drawY - 5 + i * 12, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    // Health Bar über dem Kopf
+                    const barWidth = 60;
+                    const barHeight = 6;
+                    const healthPercent = golem.health / golem.maxHealth;
+
+                    // Hintergrund (rot)
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillRect(golem.x - barWidth / 2, drawY - 60, barWidth, barHeight);
+
+                    // Gesundheit (grün)
+                    ctx.fillStyle = '#00ff00';
+                    ctx.fillRect(golem.x - barWidth / 2, drawY - 60, barWidth * healthPercent, barHeight);
+
+                    // Rahmen
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(golem.x - barWidth / 2, drawY - 60, barWidth, barHeight);
+
+                    ctx.restore();
+                }
+
+                // Spawne Golem
+                function spawnGolem() {
+                    golems.push({
+                        x: canvas.width + 100,
+                        y: canvas.height - 140,  // Näher am Boden
+                        width: 80,
+                        height: 110,
+                        speed: 0.56 + Math.random() * 0.28,  // Nochmal 20% langsamer
+                        health: 5,
+                        maxHealth: 5,
+                        walkPhase: Math.random() * Math.PI * 2
+                    });
+                }
+
+                // Erstelle Nadel-Konfetti (grün/braun)
+                function createNeedleConfetti(x, y, count = 40) {
+                    const colors = ['#228b22', '#2d5016', '#654321', '#3d5c29'];
+                    for (let i = 0; i < count; i++) {
+                        particles.push({
+                            x: x,
+                            y: y,
+                            vx: (Math.random() - 0.5) * 10,
+                            vy: (Math.random() - 0.5) * 10 - 2,
+                            life: 60,
+                            color: colors[Math.floor(Math.random() * colors.length)],
+                            size: Math.random() * 8 + 2,
+                            rotation: Math.random() * Math.PI * 2,
+                            rotationSpeed: (Math.random() - 0.5) * 0.3,
+                            isNeedle: true
+                        });
+                    }
+                }
+
+                // Zeichne Baum-Kanone (ohne Rentier, gespiegelt)
+                function drawTreeCannon(cannon) {
+                    ctx.save();
+
+                    // Rückstoß-Offset
+                    const recoilX = cannon.recoilOffset || 0;
+
+                    // Fallschirm (wenn noch nicht gelandet)
+                    if (!cannon.landed) {
+                        const parachuteX = cannon.x;
+                        const parachuteY = cannon.y - 80;
+
+                        // Seile
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(parachuteX - 40, parachuteY + 30);
+                        ctx.lineTo(cannon.x - 30, cannon.y + 40);
+                        ctx.moveTo(parachuteX - 20, parachuteY + 30);
+                        ctx.lineTo(cannon.x - 10, cannon.y + 40);
+                        ctx.moveTo(parachuteX + 20, parachuteY + 30);
+                        ctx.lineTo(cannon.x + 10, cannon.y + 40);
+                        ctx.moveTo(parachuteX + 40, parachuteY + 30);
+                        ctx.lineTo(cannon.x + 30, cannon.y + 40);
+                        ctx.stroke();
+
+                        // Fallschirm Kappe (rot/weiß gestreift)
+                        for (let i = 0; i < 6; i++) {
+                            ctx.fillStyle = i % 2 === 0 ? '#ff0000' : '#ffffff';
+                            ctx.beginPath();
+                            ctx.moveTo(parachuteX, parachuteY);
+                            ctx.arc(parachuteX, parachuteY + 10, 50,
+                                    Math.PI + (i * Math.PI / 3),
+                                    Math.PI + ((i + 1) * Math.PI / 3));
+                            ctx.lineTo(parachuteX, parachuteY);
+                            ctx.fill();
                         }
-                        break;
+
+                        // Fallschirm Umriss
+                        ctx.strokeStyle = '#000000';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(parachuteX, parachuteY + 10, 50, Math.PI, Math.PI * 2);
+                        ctx.stroke();
                     }
-                }
-            }
 
-            // Update Baum-Kanonen
-            for (let i = treeCannons.length - 1; i >= 0; i--) {
-                const cannon = treeCannons[i];
-
-                // Fall-Animation (mit Fallschirm)
-                if (!cannon.landed) {
-                    cannon.y += cannon.fallSpeed;
-
-                    // Schwanken im Wind (nur während des Fallens)
-                    cannon.swingPhase += 0.05;
-                    const swingOffset = Math.sin(cannon.swingPhase) * 15;
-                    cannon.x = (canvas.width - 200) + swingOffset;
-
-                    // Landen wenn Boden erreicht
-                    if (cannon.y >= cannon.groundY) {
-                        cannon.y = cannon.groundY;
-                        cannon.landed = true;
-                        cannon.x = canvas.width - 200;  // Fixiere Position beim Landen
-                    }
-                }
-
-                // Rückstoß-Animation
-                if (cannon.recoilOffset > 0) {
-                    cannon.recoilOffset -= 2;
-                    if (cannon.recoilOffset < 0) cannon.recoilOffset = 0;
-                }
-
-                // Schießen (auch während des Fallens!)
-                cannon.shootTimer--;
-                if (cannon.shootTimer <= 0) {
-                    // Berechne Winkel zu Santa (dynamisch)
+                    // Kanone (größer und dynamisch auf Santa gerichtet)
+                    const cannonX = cannon.x + recoilX;
+                    // Berechne Winkel zu Santa
                     const dx = santa.x + santa.width / 2 - cannon.x;
                     const dy = santa.y + santa.height / 2 - cannon.y;
                     const cannonAngle = Math.atan2(dy, dx) + 0.08; // Höher zielen
 
-                    // Berechne Mündungsposition
-                    const barrelLength = 115;  // Positive - barrel extends forward in angle direction
-                    const muzzleX = cannon.x + 10 + barrelLength * Math.cos(cannonAngle);
-                    const muzzleY = cannon.y + 50 + barrelLength * Math.sin(cannonAngle);
-
-                    // Tannenbaum schießen (DIREKT auf Santa, ohne Bogen)
-                    const speed = 4.8;  // Nochmal 20% langsamer
-                    flyingTrees.push({
-                        x: muzzleX,
-                        y: muzzleY,
-                        vx: speed * Math.cos(cannonAngle),
-                        vy: speed * Math.sin(cannonAngle),
-                        rotation: Math.PI / 4,  // Anfangsrotation
-                        rotationSpeed: 0.15,
-                        hasGravity: false  // Keine Gravität - fliegt direkt
-                    });
-
-                    // Rückstoß!
-                    cannon.recoilOffset = 20;  // Nach rechts (wegen Rückstoß)
-
-                    // Nadel-Konfetti beim Schuss aus der Mündung!
-                    createNeedleConfetti(muzzleX, muzzleY, 25);
-
-                    cannon.shootTimer = 60 + Math.floor(Math.random() * 40);
-                }
-
-                // Entferne wenn zu weit links
-                if (cannon.x < -250) {
-                    treeCannons.splice(i, 1);
-                    continue;
-                }
-
-                // Kollision mit Santa
-                if (cannon.x < santa.x + santa.width + 70 &&
-                    cannon.x + cannon.width > santa.x &&
-                    cannon.y < santa.y + santa.height &&
-                    cannon.y + cannon.height > santa.y) {
-                    santa.health--;
-                    createNeedleConfetti(cannon.x, cannon.y + 60, 30);
-                    // Kanone wird nicht zerstört bei Kollision
-
-                    if (santa.health <= 0) {
-                        gameOver();
-                    }
-                }
-
-                // Kollision mit Schneekugeln
-                for (let j = snowballs.length - 1; j >= 0; j--) {
-                    const ball = snowballs[j];
-                    const dx = ball.x - cannon.x;
-                    const dy = ball.y - (cannon.y + 60);
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < ball.radius + 60) {
-                        cannon.health--;
-                        createParticles(ball.x, ball.y, '#ffffff', 15);
-                        snowballs.splice(j, 1);
-
-                        if (cannon.health <= 0) {
-                            // Kanone zerstört - große Nadel-Explosion!
-                            createNeedleConfetti(cannon.x, cannon.y + 60, 60);
-                            createParticles(cannon.x, cannon.y + 60, '#654321', 30);
-                            treeCannons.splice(i, 1);
-                            score += 100;
-                            document.getElementById('score').textContent = score;
-                        }
-                        break;
-                    }
-                }
-            }
-
-            // Update fliegende Tannenbäume
-            for (let i = flyingTrees.length - 1; i >= 0; i--) {
-                const tree = flyingTrees[i];
-                tree.x += tree.vx;
-                tree.y += tree.vy;
-                tree.rotation += tree.rotationSpeed;
-
-                // Gravität (nur wenn hasGravity nicht false ist)
-                if (tree.hasGravity !== false) {
-                    tree.vy += 0.1;
-                }
-
-                // Entferne wenn außerhalb
-                if (tree.x < -50 || tree.y > canvas.height + 50) {
-                    flyingTrees.splice(i, 1);
-                    continue;
-                }
-
-                // Kollision mit Santa
-                if (tree.x > santa.x && tree.x < santa.x + santa.width &&
-                    tree.y > santa.y && tree.y < santa.y + santa.height) {
-                    santa.health--;
-                    createNeedleConfetti(tree.x, tree.y, 30);
-                    flyingTrees.splice(i, 1);
-
-                    if (santa.health <= 0) {
-                        gameOver();
-                    }
-                    continue;
-                }
-
-                // Kollision mit Schneekugeln
-                for (let j = snowballs.length - 1; j >= 0; j--) {
-                    const ball = snowballs[j];
-                    const dx = ball.x - tree.x;
-                    const dy = ball.y - tree.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < ball.radius + 20) {
-                        // Tannenbaum explodiert mit grünem Nadel-Konfetti!
-                        createNeedleConfetti(tree.x, tree.y, 35);
-                        flyingTrees.splice(i, 1);
-                        snowballs.splice(j, 1);
-                        score += 15;
-                        document.getElementById('score').textContent = score;
-                        break;
-                    }
-                }
-            }
-
-            // Update Rentiere
-            for (let i = reindeer.length - 1; i >= 0; i--) {
-                const deer = reindeer[i];
-                deer.x -= deer.speed;
-
-                // Leichte Auf-und-Ab-Bewegung
-                deer.y += Math.sin(Date.now() / 200 + i) * 0.5;
-
-                // Geschenk abwerfen
-                deer.dropTimer--;
-                if (deer.dropTimer <= 0 && deer.x > 0 && deer.x < canvas.width - 100) {
-                    const colors = ['#ffd700', '#ff69b4', '#00ffff', '#00ff00'];
-                    gifts.push({
-                        x: deer.x + 65,
-                        y: deer.y + 20,
-                        vy: 0,
-                        gravity: 0.3,
-                        color: colors[Math.floor(Math.random() * colors.length)],
-                        rotation: 0
-                    });
-                    deer.dropTimer = 80 + Math.floor(Math.random() * 60);
-                }
-
-                // Entferne wenn zu weit links
-                if (deer.x < -150) {
-                    reindeer.splice(i, 1);
-                    continue;
-                }
-
-                // Kollision mit Schneekugeln
-                for (let j = snowballs.length - 1; j >= 0; j--) {
-                    const ball = snowballs[j];
-                    const dx = ball.x - deer.x;
-                    const dy = ball.y - deer.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < ball.radius + 30) {
-                        createParticles(deer.x, deer.y, '#8B4513', 20);
-                        reindeer.splice(i, 1);
-                        snowballs.splice(j, 1);
-                        score += 20;
-                        document.getElementById('score').textContent = score;
-                        break;
-                    }
-                }
-            }
-
-            // Update Geschenke
-            for (let i = gifts.length - 1; i >= 0; i--) {
-                const gift = gifts[i];
-                gift.vy += gift.gravity;
-                gift.y += gift.vy;
-                gift.rotation += 0.1;
-
-                // Entferne wenn zu weit unten
-                if (gift.y > canvas.height + 50) {
-                    gifts.splice(i, 1);
-                    continue;
-                }
-
-                // Kollision mit Boden - Konfetti!
-                if (gift.y >= canvas.height - 100) {
-                    createConfetti(gift.x, gift.y, 30);
-                    gifts.splice(i, 1);
-                    continue;
-                }
-
-                // Kollision mit Santa
-                if (gift.x > santa.x && gift.x < santa.x + santa.width &&
-                    gift.y > santa.y && gift.y < santa.y + santa.height) {
-                    santa.health--;
-                    createConfetti(gift.x, gift.y, 30);
-                    gifts.splice(i, 1);
-
-                    if (santa.health <= 0) {
-                        gameOver();
-                    }
-                    continue;
-                }
-
-                // Kollision mit Schneekugeln - auch Konfetti!
-                for (let j = snowballs.length - 1; j >= 0; j--) {
-                    const ball = snowballs[j];
-                    const dx = ball.x - gift.x;
-                    const dy = ball.y - gift.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < ball.radius + 15) {
-                        createConfetti(gift.x, gift.y, 25);
-                        gifts.splice(i, 1);
-                        snowballs.splice(j, 1);
-                        score += 5;
-                        document.getElementById('score').textContent = score;
-                        break;
-                    }
-                }
-            }
-
-            // Update Lebkuchenmänner
-            for (let i = gingerbreadMen.length - 1; i >= 0; i--) {
-                const gingerbread = gingerbreadMen[i];
-                gingerbread.x += gingerbread.vx;
-
-                // Entferne wenn zu weit links
-                if (gingerbread.x < -150) {
-                    gingerbreadMen.splice(i, 1);
-                    continue;
-                }
-
-                // Kollision mit Santa
-                const distToSanta = Math.abs(gingerbread.x - santa.x);
-                if (distToSanta < 80 && Math.abs(gingerbread.y - santa.y) < 100) {
-                    santa.health -= 2; // Macht mehr Schaden als normale Gegner!
-                    createGingerbreadCrumbs(gingerbread.x, gingerbread.y, 40);
-                    gingerbreadMen.splice(i, 1);
-
-                    if (santa.health <= 0) {
-                        gameOver();
-                    }
-                    continue;
-                }
-
-                // Kollision mit Schneekugeln
-                for (let j = snowballs.length - 1; j >= 0; j--) {
-                    const ball = snowballs[j];
-                    const dx = ball.x - gingerbread.x;
-                    const dy = ball.y - gingerbread.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < ball.radius + 90) {
-                        gingerbread.health--;
-                        snowballs.splice(j, 1);
-                        createGingerbreadCrumbs(gingerbread.x, gingerbread.y, 10);
-
-                        if (gingerbread.health <= 0) {
-                            // Riesige Explosion mit vielen Krümeln!
-                            createGingerbreadCrumbs(gingerbread.x, gingerbread.y, 60);
-                            gingerbreadMen.splice(i, 1);
-                            score += 150; // Hoher Score für Boss!
-                            document.getElementById('score').textContent = score;
-                        }
-                        break;
-                    }
-                }
-            }
-
-            // Update Schneeflocken (fallen gerade nach unten)
-            snowflakes.forEach(flake => {
-                flake.y += flake.speed;
-                flake.swing += flake.swingSpeed;
-
-                // Reset wenn am Boden
-                if (flake.y > canvas.height - 100) {
-                    flake.y = -10;
-                    flake.x = Math.random() * canvas.width;
-                }
-            });
-
-            // Update Partikel
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vy += 0.1; // Gravität für Konfetti
-                if (p.rotation !== undefined) {
-                    p.rotation += p.rotationSpeed;
-                }
-                p.life--;
-
-                if (p.life <= 0) {
-                    particles.splice(i, 1);
-                }
-            }
-
-            // Spawne Schneemänner
-            snowmanSpawnTimer++;
-            if (snowmanSpawnTimer >= snowmanSpawnInterval) {
-                spawnSnowman();
-                snowmanSpawnTimer = 0;
-                // Erhöhe Schwierigkeit
-                if (snowmanSpawnInterval > 60) {
-                    snowmanSpawnInterval -= 1;
-                }
-            }
-
-            // Spawne Rentiere
-            reindeerSpawnTimer++;
-            if (reindeerSpawnTimer >= reindeerSpawnInterval) {
-                spawnReindeer();
-                reindeerSpawnTimer = 0;
-                // Erhöhe Schwierigkeit
-                if (reindeerSpawnInterval > 150) {
-                    reindeerSpawnInterval -= 1;
-                }
-            }
-
-            // Spawne Golems (alle 10-15 Sekunden)
-            golemSpawnTimer++;
-            if (golemSpawnTimer >= golemSpawnInterval) {
-                spawnGolem();
-                golemSpawnTimer = 0;
-                // Zufälliges nächstes Intervall
-                golemSpawnInterval = 600 + Math.floor(Math.random() * 300);
-            }
-
-            // Spawne Baum-Kanonen (alle 15-20 Sekunden)
-            treeCannonSpawnTimer++;
-            if (treeCannonSpawnTimer >= treeCannonSpawnInterval) {
-                spawnTreeCannon();
-                treeCannonSpawnTimer = 0;
-                // Zufälliges nächstes Intervall
-                treeCannonSpawnInterval = 900 + Math.floor(Math.random() * 300);
-            }
-
-            // Spawne Lebkuchenmann
-            gingerbreadSpawnTimer++;
-            if (gingerbreadSpawnTimer >= gingerbreadSpawnInterval) {
-                spawnGingerbreadMan();
-                gingerbreadSpawnTimer = 0;
-                // Zufälliges nächstes Intervall
-                gingerbreadSpawnInterval = 1200 + Math.floor(Math.random() * 600);
-            }
-
-            // Spawne Fallschirm-Geschenk
-            parachuteGiftSpawnTimer++;
-            if (parachuteGiftSpawnTimer >= parachuteGiftSpawnInterval) {
-                spawnParachuteGift();
-                parachuteGiftSpawnTimer = 0;
-                // Zufälliges nächstes Intervall (30±5 Sekunden)
-                parachuteGiftSpawnInterval = 1800 + Math.floor(Math.random() * 600);
-            }
-
-            // Update Fallschirm-Geschenke
-            for (let i = parachuteGifts.length - 1; i >= 0; i--) {
-                const gift = parachuteGifts[i];
-                gift.y += gift.vy;
-                gift.parachutePhase += 0.05;
-
-                // Entfernen wenn außerhalb
-                if (gift.y > canvas.height) {
-                    parachuteGifts.splice(i, 1);
-                    continue;
-                }
-
-                // Kollision mit Schneebällen
-                for (let j = snowballs.length - 1; j >= 0; j--) {
-                    const ball = snowballs[j];
-                    const dx = ball.x - gift.x;
-                    const dy = ball.y - gift.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < 30) {
-                        snowballs.splice(j, 1);
-                        gift.health--;
-
-                        // Partikel-Effekt
-                        createParticles(ball.x, ball.y, '#ffffff', 5);
-
-                        if (gift.health <= 0) {
-                            // Geschenk zerstört - Powerup droppen
-                            powerups.push({
-                                x: gift.x,
-                                y: gift.y,
-                                vx: 0,
-                                vy: 2,
-                                pulse: 0
-                            });
-                            createConfetti(gift.x, gift.y, 20);
-                            parachuteGifts.splice(i, 1);
-                            score += 50;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // Update Powerups
-            for (let i = powerups.length - 1; i >= 0; i--) {
-                const powerup = powerups[i];
-                powerup.y += powerup.vy;
-                powerup.pulse += 0.1;
-
-                // Entfernen wenn außerhalb
-                if (powerup.y > canvas.height) {
-                    powerups.splice(i, 1);
-                    continue;
-                }
-
-                // Kollision mit Santa
-                const dx = powerup.x - (santa.x + santa.width / 2);
-                const dy = powerup.y - (santa.y + santa.height / 2);
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance < 40) {
-                    // Powerup eingesammelt!
-                    powerupActive = true;
-                    powerupTimer = powerupDuration;
-                    powerups.splice(i, 1);
-                    createConfetti(powerup.x, powerup.y, 30);
-                    score += 100;
-                }
-            }
-
-            // Update Powerup Timer
-            if (powerupActive) {
-                powerupTimer--;
-                if (powerupTimer <= 0) {
-                    powerupActive = false;
-                }
-            }
-        }
-
-        // Zeichne alles
-        function draw() {
-            // Himmel (Gradient bereits im CSS)
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Bäume im Hintergrund
-            backgroundTrees.forEach(tree => {
-                tree.x -= 0.28;  // Nochmal 20% langsamer
-                if (tree.x < -50) {
-                    tree.x = canvas.width + 50;
-                }
-                drawTree(tree);
-            });
-
-            // Boden
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
-
-            // Schneeflocken (fallen gerade runter)
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            snowflakes.forEach(flake => {
-                ctx.beginPath();
-                ctx.arc(flake.x, flake.y, flake.size, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            // Rentiere (im Hintergrund)
-            reindeer.forEach(drawReindeer);
-
-            // Geschenke
-            gifts.forEach(gift => {
-                ctx.save();
-                ctx.translate(gift.x, gift.y);
-                ctx.rotate(gift.rotation);
-                ctx.translate(-gift.x, -gift.y);
-                drawGift(gift);
-                ctx.restore();
-            });
-
-            // Partikel / Konfetti
-            particles.forEach(p => {
-                ctx.save();
-                ctx.fillStyle = p.color;
-                ctx.globalAlpha = p.life / 60;
-
-                if (p.rotation !== undefined) {
-                    // Konfetti mit Rotation
-                    ctx.translate(p.x, p.y);
-                    ctx.rotate(p.rotation);
-                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
-                } else {
-                    // Normale Partikel (rund)
+                    // Kanonen-Basis (Holz) - größer
+                    ctx.fillStyle = '#654321';
+                    ctx.fillRect(cannonX - 50, cannon.y + 40, 120, 40);
+
+                    // Räder (größer)
+                    ctx.fillStyle = '#2d1810';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 3;
                     ctx.beginPath();
-                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.arc(cannonX - 30, cannon.y + 80, 14, 0, Math.PI * 2);
                     ctx.fill();
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(cannonX + 50, cannon.y + 80, 14, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Kanonen-Rohr (rotiert dynamisch auf Santa)
+                    ctx.save();
+                    ctx.translate(cannonX + 10, cannon.y + 50);
+                    ctx.rotate(cannonAngle);
+
+                    // Rohr (länger und dicker) - in Schussrichtung
+                    ctx.fillStyle = '#2d3748';
+                    ctx.fillRect(0, -15, 100, 30);  // Von 0 bis 100 in Schussrichtung
+
+                    // Kanonenmündung (am vorderen Ende)
+                    ctx.fillStyle = '#1a202c';
+                    ctx.fillRect(100, -20, 15, 40);
+
+                    // Verzierung (Metallringe)
+                    ctx.strokeStyle = '#4a5568';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.arc(35, 0, 18, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(70, 0, 18, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    ctx.restore();
+
+                    // Health Bar über der Kanone
+                    const barWidth = 100;
+                    const barHeight = 8;
+                    const healthPercent = cannon.health / cannon.maxHealth;
+
+                    // Hintergrund (rot)
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillRect(cannon.x - barWidth / 2, cannon.y, barWidth, barHeight);
+
+                    // Gesundheit (grün)
+                    ctx.fillStyle = '#00ff00';
+                    ctx.fillRect(cannon.x - barWidth / 2, cannon.y, barWidth * healthPercent, barHeight);
+
+                    // Rahmen
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(cannon.x - barWidth / 2, cannon.y, barWidth, barHeight);
+
+                    ctx.restore();
                 }
 
-                ctx.globalAlpha = 1;
-                ctx.restore();
-            });
+                // Spawne Baum-Kanone
+                function spawnTreeCannon() {
+                    treeCannons.push({
+                        x: canvas.width - 200,  // Rechts im Bild
+                        y: -150,  // Startet oben außerhalb des Bildschirms
+                        width: 200,
+                        height: 100,
+                        fallSpeed: 1.5,  // Langsamer Fall mit Fallschirm
+                        landed: false,  // Noch nicht gelandet
+                        groundY: canvas.height - 180,  // Ziel-Y-Position am Boden
+                        health: 10,
+                        maxHealth: 10,
+                        shootTimer: 60 + Math.floor(Math.random() * 40),  // Schießt schnell
+                        recoilOffset: 0,
+                        swingPhase: Math.random() * Math.PI * 2  // Für Wind-Schwanken
+                    });
+                }
 
-            // Schneemänner
-            snowmen.forEach(drawSnowman);
+                // Zeichne Lebkuchenmann (riesiger Boss)
+                function drawGingerbreadMan(gingerbread) {
+                    ctx.save();
 
-            // Golems (größer, darüber)
-            golems.forEach(drawGolem);
+                    // Gehanimation
+                    gingerbread.walkPhase = (gingerbread.walkPhase || 0) + 0.08;
+                    const bounce = Math.abs(Math.sin(gingerbread.walkPhase)) * 8;
 
-            // Lebkuchenmänner (riesiger Boss)
-            gingerbreadMen.forEach(drawGingerbreadMan);
+                    const drawY = gingerbread.y - bounce;
 
-            // Baum-Kanonen (Boss-Gegner)
-            treeCannons.forEach(drawTreeCannon);
+                    // Körper (großer Lebkuchenmann)
+                    ctx.fillStyle = '#8B4513'; // Lebkuchenbraun
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 4;
 
-            // Fliegende Tannenbäume
-            flyingTrees.forEach(drawFlyingTree);
+                    // Beine (zwei große runde Beine mit Bewegung)
+                    const legSwing = Math.sin(gingerbread.walkPhase) * 15;
+                    const legLift = Math.abs(Math.sin(gingerbread.walkPhase * 2)) * 12;
 
-            // Schneekugeln
-            snowballs.forEach(drawSnowball);
+                    // Linkes Bein (hebt sich abwechselnd)
+                    const leftLegY = drawY + 100 + (legSwing > 0 ? legLift : 0);
+                    ctx.beginPath();
+                    ctx.ellipse(gingerbread.x - 30, leftLegY, 25, 40, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
 
-            // Fallschirm-Geschenke
-            parachuteGifts.forEach(drawParachuteGift);
+                    // Rechtes Bein (hebt sich abwechselnd)
+                    const rightLegY = drawY + 100 + (legSwing < 0 ? legLift : 0);
+                    ctx.beginPath();
+                    ctx.ellipse(gingerbread.x + 30, rightLegY, 25, 40, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
 
-            // Powerups
-            powerups.forEach(drawPowerup);
+                    // Körper (großer gerundeter Körper)
+                    ctx.beginPath();
+                    ctx.ellipse(gingerbread.x, drawY + 20, 70, 90, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
 
-            // Santa
-            drawSanta();
+                    // Kopf (großer runder Kopf)
+                    ctx.beginPath();
+                    ctx.arc(gingerbread.x, drawY - 80, 50, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
 
-            // Powerup-Indikator (wenn aktiv)
-            if (powerupActive) {
-                const timeLeft = Math.ceil(powerupTimer / 60);
-                ctx.save();
+                    // Arme (dick und rund mit Schwing-Animation von der Schulter)
+                    const armSwing = Math.sin(gingerbread.walkPhase) * 0.4; // Rotation
 
-                // Timer Text
-                ctx.fillStyle = '#ffffff';
-                ctx.strokeStyle = '#000000';
-                ctx.lineWidth = 2;
-                ctx.font = 'bold 16px monospace';
-                ctx.textAlign = 'left';
-                ctx.strokeText(`SPREAD: ${timeLeft}s`, 10, 80);
-                ctx.fillText(`SPREAD: ${timeLeft}s`, 10, 80);
+                    // Linker Arm (rotiert von Schulter aus)
+                    ctx.save();
+                    ctx.translate(gingerbread.x - 70, drawY - 50); // Schulterposition
+                    ctx.rotate(-0.3 - armSwing); // Rotation von Schulter
+                    ctx.beginPath();
+                    ctx.ellipse(0, 40, 20, 50, 0, 0, Math.PI * 2); // Arm hängt nach unten von Schulter
+                    ctx.fill();
+                    ctx.stroke();
 
-                ctx.restore();
-            }
+                    // Zuckerguss-Knopf auf linkem Arm
+                    ctx.fillStyle = '#ffffff';
+                    ctx.strokeStyle = '#cccccc';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(0, 40, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.restore();
 
-            // Lautsprecher mit Beat-Animation
-            drawSpeakers();
-        }
+                    // Rechter Arm (rotiert von Schulter aus)
+                    ctx.save();
+                    ctx.translate(gingerbread.x + 70, drawY - 50); // Schulterposition
+                    ctx.rotate(0.3 + armSwing); // Rotation von Schulter
+                    ctx.fillStyle = '#8B4513';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.ellipse(0, 40, 20, 50, 0, 0, Math.PI * 2); // Arm hängt nach unten von Schulter
+                    ctx.fill();
+                    ctx.stroke();
 
-        // Zeichne animierte Lautsprecher
-        let beatPhase = 0;
-        function drawSpeakers() {
-            beatPhase += 0.12; // 20% langsamer
-            const pulse = Math.abs(Math.sin(beatPhase)) * 0.3 + 0.7; // Pulsiert zwischen 0.7 und 1.0
+                    // Zuckerguss-Knopf auf rechtem Arm
+                    ctx.fillStyle = '#ffffff';
+                    ctx.strokeStyle = '#cccccc';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(0, 40, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.restore();
 
-            // Linker Lautsprecher (links vom Rapper)
-            drawSpeaker(canvas.width - 170, canvas.height - 60, pulse, false);
+                    // Zuckerguss-Dekoration (weiß)
+                    ctx.fillStyle = '#ffffff';
+                    ctx.strokeStyle = '#cccccc';
+                    ctx.lineWidth = 2;
 
-            // Rechter Lautsprecher (rechts vom Rapper, gespiegelt)
-            drawSpeaker(canvas.width - 50, canvas.height - 60, pulse, true);
+                    // Knöpfe auf dem Körper (3 große runde Knöpfe)
+                    for (let i = 0; i < 3; i++) {
+                        ctx.beginPath();
+                        ctx.arc(gingerbread.x, drawY - 20 + i * 30, 10, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                    }
 
-            // Scheinwerfer-Lichtkegel (transparent, darunter)
-            drawSpotlights(canvas.width - 110, canvas.height - 60, pulse);
+                    // BÖSE Augenbrauen (schräg nach unten)
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    // Linke Augenbraue (schräg und dick)
+                    ctx.moveTo(gingerbread.x - 32, drawY - 92);
+                    ctx.lineTo(gingerbread.x - 12, drawY - 88);
+                    ctx.lineTo(gingerbread.x - 12, drawY - 84);
+                    ctx.lineTo(gingerbread.x - 32, drawY - 88);
+                    ctx.closePath();
+                    ctx.fill();
+                    // Rechte Augenbraue (schräg und dick)
+                    ctx.moveTo(gingerbread.x + 12, drawY - 88);
+                    ctx.lineTo(gingerbread.x + 32, drawY - 92);
+                    ctx.lineTo(gingerbread.x + 32, drawY - 88);
+                    ctx.lineTo(gingerbread.x + 12, drawY - 84);
+                    ctx.closePath();
+                    ctx.fill();
 
-            // Fan-Crowd zwischen den Scheinwerfern
-            drawFanCrowd(canvas.width - 130, canvas.height - 15, pulse);
+                    // Augen (schwarz, groß und böse - keine weißen Punkte mehr)
+                    ctx.fillStyle = '#ff0000'; // Rote glühende Augen
+                    ctx.shadowColor = '#ff0000';
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.arc(gingerbread.x - 20, drawY - 85, 8, 0, Math.PI * 2);
+                    ctx.arc(gingerbread.x + 20, drawY - 85, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
 
-            // Rap-Elf
-            drawRapElf(canvas.width - 110, canvas.height - 40, pulse);
-        }
+                    // Pupillen (klein und böse)
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(gingerbread.x - 20, drawY - 85, 3, 0, Math.PI * 2);
+                    ctx.arc(gingerbread.x + 20, drawY - 85, 3, 0, Math.PI * 2);
+                    ctx.fill();
 
-        // Zeichne Bühne
-        function drawStage(x, y, pulse) {
-            ctx.save();
+                    // Böser Mund (zackig nach unten)
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(gingerbread.x - 18, drawY - 72);
+                    ctx.lineTo(gingerbread.x - 12, drawY - 68);
+                    ctx.lineTo(gingerbread.x - 6, drawY - 72);
+                    ctx.lineTo(gingerbread.x, drawY - 68);
+                    ctx.lineTo(gingerbread.x + 6, drawY - 72);
+                    ctx.lineTo(gingerbread.x + 12, drawY - 68);
+                    ctx.lineTo(gingerbread.x + 18, drawY - 72);
+                    ctx.stroke();
 
-            // Bühnen-Plattform (dunkelgrau/schwarz)
-            ctx.fillStyle = '#2a2a2a';
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 2;
-            ctx.fillRect(x - 25, y, 50, 10);
-            ctx.strokeRect(x - 25, y, 50, 10);
+                    // Health Bar über dem Kopf
+                    const barWidth = 100;
+                    const barHeight = 10;
+                    const healthPercent = gingerbread.health / gingerbread.maxHealth;
 
-            // Holz-Textur (Linien)
-            ctx.strokeStyle = '#1a1a1a';
-            ctx.lineWidth = 1;
-            for (let i = 0; i < 5; i++) {
-                ctx.beginPath();
-                ctx.moveTo(x - 25 + i * 12, y);
-                ctx.lineTo(x - 25 + i * 12, y + 10);
-                ctx.stroke();
-            }
+                    // Hintergrund (rot)
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillRect(gingerbread.x - barWidth / 2, drawY - 140, barWidth, barHeight);
 
-            // Bühnen-Beine
-            ctx.fillStyle = '#1a1a1a';
-            ctx.fillRect(x - 20, y + 10, 4, 8);
-            ctx.fillRect(x + 16, y + 10, 4, 8);
+                    // Gesundheit (grün)
+                    ctx.fillStyle = '#00ff00';
+                    ctx.fillRect(gingerbread.x - barWidth / 2, drawY - 140, barWidth * healthPercent, barHeight);
 
-            ctx.restore();
-        }
+                    // Rahmen
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(gingerbread.x - barWidth / 2, drawY - 140, barWidth, barHeight);
 
-        // Zeichne Scheinwerfer mit beweglichem Licht
-        let spotlightAngle = 0;
-        function drawSpotlights(elfX, elfY, pulse) {
-            ctx.save();
+                    ctx.restore();
+                }
 
-            spotlightAngle += 0.02; // Langsame Bewegung
+                // Spawne Lebkuchenmann
+                function spawnGingerbreadMan() {
+                    gingerbreadMen.push({
+                        x: canvas.width + 100,
+                        y: canvas.height - 240,  // Größer, also höhere Position
+                        width: 180,
+                        height: 240,
+                        vx: -0.56,  // Nochmal 20% langsamer
+                        health: 20,
+                        maxHealth: 20,
+                        walkPhase: 0
+                    });
+                }
 
-            // Linker Scheinwerfer (orange/gelb)
-            const leftAngle = Math.sin(spotlightAngle) * 0.15;
-            drawSpotlight(elfX - 30, canvas.height - 15, elfX, elfY, 'rgba(255, 200, 0, 0.15)', leftAngle, pulse);
+                // Braune Krümel-Partikel für Lebkuchenmann-Explosion
+                function createGingerbreadCrumbs(x, y, count) {
+                    for (let i = 0; i < count; i++) {
+                        const angle = (Math.PI * 2 * i) / count;
+                        const speed = 2 + Math.random() * 4;
+                        particles.push({
+                            x: x,
+                            y: y,
+                            vx: Math.cos(angle) * speed,
+                            vy: Math.sin(angle) * speed - Math.random() * 2,
+                            size: 3 + Math.random() * 5,
+                            color: ['#8B4513', '#A0522D', '#D2691E'][Math.floor(Math.random() * 3)],  // Verschiedene Brauntöne
+                            life: 60,
+                            gravity: 0.2
+                        });
+                    }
+                }
 
-            // Rechter Scheinwerfer (blau/cyan)
-            const rightAngle = Math.sin(spotlightAngle + Math.PI) * 0.15;
-            drawSpotlight(elfX + 30, canvas.height - 15, elfX, elfY, 'rgba(0, 200, 255, 0.15)', rightAngle, pulse);
+                // Spawne Fallschirm-Geschenk
+                function spawnParachuteGift() {
+                    // Spawne immer über dem Weihnachtsmann
+                    const x = santa.x + santa.width / 2;
+                    parachuteGifts.push({
+                        x: x,
+                        y: -50,
+                        width: 30,
+                        height: 30,
+                        vy: 0.5, // Langsames Schweben
+                        health: 3, // Braucht 3 Treffer
+                        parachutePhase: Math.random() * Math.PI * 2 // Für Schwankung
+                    });
+                }
 
-            ctx.restore();
-        }
+                // Zeichne Fallschirm-Geschenk
+                function drawParachuteGift(gift) {
+                    ctx.save();
 
-        function drawSpotlight(lightX, lightY, targetX, targetY, color, angleOffset, pulse) {
-            ctx.save();
+                    // Seitliches Schwanken
+                    const sway = Math.sin(gift.parachutePhase) * 5;
 
-            // Lichtkegel (Dreieck)
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.moveTo(lightX, lightY);
+                    // Fallschirm (rot-weiß gestreift)
+                    ctx.fillStyle = '#ff0000';
+                    ctx.beginPath();
+                    ctx.arc(gift.x + sway, gift.y - 20, 25, Math.PI, Math.PI * 2);
+                    ctx.fill();
 
-            // Winkel zum Ziel mit Offset
-            const baseAngle = Math.atan2(targetY - lightY, targetX - lightX);
-            const spread = 0.4; // Breite des Lichtkegels
+                    // Weiße Streifen
+                    ctx.fillStyle = '#ffffff';
+                    for (let i = 0; i < 3; i++) {
+                        ctx.beginPath();
+                        const angle = Math.PI + (i * Math.PI / 6);
+                        ctx.moveTo(gift.x + sway, gift.y - 20);
+                        ctx.arc(gift.x + sway, gift.y - 20, 25, angle, angle + Math.PI / 6);
+                        ctx.lineTo(gift.x + sway, gift.y - 20);
+                        ctx.fill();
+                    }
 
-            const leftEdge = baseAngle - spread + angleOffset;
-            const rightEdge = baseAngle + spread + angleOffset;
-            const length = 70;
+                    // Fallschirm-Leinen
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(gift.x + sway - 20, gift.y - 20);
+                    ctx.lineTo(gift.x, gift.y);
+                    ctx.moveTo(gift.x + sway + 20, gift.y - 20);
+                    ctx.lineTo(gift.x, gift.y);
+                    ctx.stroke();
 
-            ctx.lineTo(targetX + Math.cos(leftEdge) * 20, targetY + Math.sin(leftEdge) * 20);
-            ctx.lineTo(targetX + Math.cos(rightEdge) * 20, targetY + Math.sin(rightEdge) * 20);
-            ctx.closePath();
-            ctx.fill();
+                    // Geschenk-Box (gold)
+                    ctx.fillStyle = '#ffd700';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2;
+                    ctx.fillRect(gift.x - 15, gift.y, 30, 30);
+                    ctx.strokeRect(gift.x - 15, gift.y, 30, 30);
 
-            // Verstärktes Licht beim Beat
-            if (pulse > 0.9) {
-                ctx.fillStyle = color.replace('0.15', '0.25');
-                ctx.fill();
-            }
+                    // Schleife (rot)
+                    ctx.strokeStyle = '#ff0000';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(gift.x - 15, gift.y + 15);
+                    ctx.lineTo(gift.x + 15, gift.y + 15);
+                    ctx.moveTo(gift.x, gift.y);
+                    ctx.lineTo(gift.x, gift.y + 30);
+                    ctx.stroke();
 
-            // Scheinwerfer-Gerät selbst
-            ctx.fillStyle = '#1a1a1a';
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.arc(lightX, lightY, 4, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
+                    // Schleife oben
+                    ctx.fillStyle = '#ff0000';
+                    ctx.beginPath();
+                    ctx.arc(gift.x - 7, gift.y - 3, 5, 0, Math.PI * 2);
+                    ctx.arc(gift.x + 7, gift.y - 3, 5, 0, Math.PI * 2);
+                    ctx.fill();
 
-            // Linse (hell)
-            ctx.fillStyle = '#ffff00';
-            ctx.beginPath();
-            ctx.arc(lightX, lightY, 2, 0, Math.PI * 2);
-            ctx.fill();
+                    ctx.restore();
+                }
 
-            ctx.restore();
-        }
+                // Zeichne Powerup
+                function drawPowerup(powerup) {
+                    ctx.save();
 
-        // Zeichne minimalistische Fan-Crowd (viel voller!)
-        function drawFanCrowd(x, y, pulse) {
-            ctx.save();
+                    // Pulsierender Effekt
+                    const pulse = Math.sin(powerup.pulse) * 0.2 + 1;
 
-            const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#a8e6cf', '#ff9a8b', '#95e1d3', '#f38181', '#aa96da'];
+                    // Stern-Form (Contra-Style)
+                    ctx.fillStyle = '#00ffff';
+                    ctx.strokeStyle = '#0080ff';
+                    ctx.lineWidth = 2;
 
-            // Mehrere Reihen bis zum unteren Rand
-            const rows = 4;
-            const fansPerRow = 5; // Weniger Fans, um Platz für Bühne zu lassen
-            const horizontalSpacing = 10;
-            const verticalSpacing = 12;
+                    ctx.beginPath();
+                    for (let i = 0; i < 5; i++) {
+                        const angle = (i * Math.PI * 2) / 5 - Math.PI / 2;
+                        const x = powerup.x + Math.cos(angle) * 15 * pulse;
+                        const y = powerup.y + Math.sin(angle) * 15 * pulse;
 
-            let fanIndex = 0;
-            for (let row = 0; row < rows; row++) {
-                for (let col = 0; col < fansPerRow; col++) {
-                    // Wellenförmiges Schwanken im Kegel
-                    const sway = Math.sin(beatPhase * 2 + col * 0.5 + row * 0.3) * 1;
+                        if (i === 0) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
 
-                    const fanX = x + col * horizontalSpacing + sway;
-                    const fanY = y + row * verticalSpacing;
-                    const color = colors[fanIndex % colors.length];
+                        // Innerer Punkt
+                        const innerAngle = angle + Math.PI / 5;
+                        const innerX = powerup.x + Math.cos(innerAngle) * 7 * pulse;
+                        const innerY = powerup.y + Math.sin(innerAngle) * 7 * pulse;
+                        ctx.lineTo(innerX, innerY);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
 
-                    // Hüpfen zum Beat (abwechselnd)
-                    const jump = pulse > 0.85 ? (fanIndex % 3 === 0 ? -3 : fanIndex % 3 === 1 ? -5 : -2) : 0;
+                    // "S" für Spread (Contra-Style)
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 14px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('S', powerup.x, powerup.y);
 
-                    // Körper (einfacher Kreis)
+                    ctx.restore();
+                }
+
+                // Zeichne fliegenden Tannenbaum
+                function drawFlyingTree(tree) {
+                    ctx.save();
+
+                    // Rotation für Flug-Effekt
+                    ctx.translate(tree.x, tree.y);
+                    ctx.rotate(tree.rotation);
+
+                    // Baumstamm
+                    ctx.fillStyle = '#654321';
+                    ctx.fillRect(-5, 0, 10, 25);
+
+                    // Baum (grün, Dreieck)
+                    ctx.fillStyle = '#228b22';
+                    ctx.strokeStyle = '#1a5c1a';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -35);
+                    ctx.lineTo(-15, 0);
+                    ctx.lineTo(15, 0);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Zweiter Abschnitt
+                    ctx.beginPath();
+                    ctx.moveTo(0, -25);
+                    ctx.lineTo(-12, -5);
+                    ctx.lineTo(12, -5);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.restore();
+                }
+
+                // Zeichne Rentier
+                function drawReindeer(deer) {
+                    ctx.save();
+
+                    // Körper (braun)
+                    ctx.fillStyle = '#8B4513';
+                    ctx.fillRect(deer.x, deer.y, 40, 20);
+
+                    // Kopf
+                    ctx.fillRect(deer.x - 15, deer.y + 5, 20, 15);
+
+                    // Geweih
+                    ctx.strokeStyle = '#654321';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(deer.x - 10, deer.y + 5);
+                    ctx.lineTo(deer.x - 15, deer.y - 10);
+                    ctx.moveTo(deer.x - 5, deer.y + 5);
+                    ctx.lineTo(deer.x - 10, deer.y - 8);
+                    ctx.stroke();
+
+                    // Nase (rot)
+                    ctx.fillStyle = '#ff0000';
+                    ctx.beginPath();
+                    ctx.arc(deer.x - 15, deer.y + 12, 3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Beine
+                    ctx.fillStyle = '#8B4513';
+                    ctx.fillRect(deer.x + 5, deer.y + 20, 5, 10);
+                    ctx.fillRect(deer.x + 20, deer.y + 20, 5, 10);
+
+                    // Schlitten
+                    ctx.fillStyle = '#c41e3a';
+                    ctx.fillRect(deer.x + 50, deer.y + 5, 30, 20);
+                    ctx.fillStyle = '#654321';
+                    ctx.beginPath();
+                    ctx.arc(deer.x + 55, deer.y + 25, 5, 0, Math.PI * 2);
+                    ctx.arc(deer.x + 75, deer.y + 25, 5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Geschenk im Schlitten
+                    ctx.fillStyle = '#ffd700';
+                    ctx.fillRect(deer.x + 58, deer.y + 10, 15, 12);
+                    ctx.strokeStyle = '#ff0000';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(deer.x + 58, deer.y + 16);
+                    ctx.lineTo(deer.x + 73, deer.y + 16);
+                    ctx.moveTo(deer.x + 65.5, deer.y + 10);
+                    ctx.lineTo(deer.x + 65.5, deer.y + 22);
+                    ctx.stroke();
+
+                    ctx.restore();
+                }
+
+                // Zeichne Geschenk
+                function drawGift(gift) {
+                    ctx.save();
+
+                    // Geschenk Box
+                    ctx.fillStyle = gift.color;
+                    ctx.fillRect(gift.x - 10, gift.y - 10, 20, 20);
+
+                    // Schleife
+                    ctx.strokeStyle = '#ff0000';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(gift.x - 10, gift.y);
+                    ctx.lineTo(gift.x + 10, gift.y);
+                    ctx.moveTo(gift.x, gift.y - 10);
+                    ctx.lineTo(gift.x, gift.y + 10);
+                    ctx.stroke();
+
+                    // Schleife oben
+                    ctx.fillStyle = '#ff0000';
+                    ctx.beginPath();
+                    ctx.arc(gift.x - 5, gift.y - 12, 4, 0, Math.PI * 2);
+                    ctx.arc(gift.x + 5, gift.y - 12, 4, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.restore();
+                }
+
+                // Spawne Rentier
+                function spawnReindeer() {
+                    reindeer.push({
+                        x: canvas.width + 100,
+                        y: 50 + Math.random() * 100,
+                        speed: 0.56 + Math.random() * 0.28,  // Nochmal 20% langsamer
+                        dropTimer: 60 + Math.floor(Math.random() * 60)
+                    });
+                }
+
+                // Erstelle Konfetti
+                function createConfetti(x, y, count = 30) {
+                    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500', '#ff69b4'];
+                    for (let i = 0; i < count; i++) {
+                        particles.push({
+                            x: x,
+                            y: y,
+                            vx: (Math.random() - 0.5) * 8,
+                            vy: (Math.random() - 0.5) * 8 - 2,
+                            life: 60,
+                            color: colors[Math.floor(Math.random() * colors.length)],
+                            size: Math.random() * 5 + 2,
+                            rotation: Math.random() * Math.PI * 2,
+                            rotationSpeed: (Math.random() - 0.5) * 0.2
+                        });
+                    }
+                }
+
+                // Update Spiel
+                function update() {
+                    if (!gameRunning) return;
+
+                    // Update Cooldowns
+                    if (shootCooldown > 0) shootCooldown--;
+
+                    // Update Santa
+                    santa.velocityY += santa.gravity;
+                    santa.y += santa.velocityY;
+
+                    // Boden Kollision
+                    const ground = canvas.height - 150;
+                    if (santa.y >= ground) {
+                        if (santa.isJumping) {
+                            // Gerade gelandet - Squash-Effekt triggern
+                            santa.landingSquash = 5;
+                        }
+                        santa.y = ground;
+                        santa.velocityY = 0;
+                        santa.isJumping = false;
+                    }
+
+                    // Update Schneekugeln
+                    for (let i = snowballs.length - 1; i >= 0; i--) {
+                        const ball = snowballs[i];
+                        ball.x += ball.vx;
+                        ball.y += ball.vy;
+
+                        // Entferne wenn außerhalb
+                        if (ball.x > canvas.width + 50 || ball.x < -50 || ball.y > canvas.height + 50 || ball.y < -50) {
+                            snowballs.splice(i, 1);
+                        }
+                    }
+
+                    // Update Schneemänner
+                    for (let i = snowmen.length - 1; i >= 0; i--) {
+                        const snowman = snowmen[i];
+                        snowman.x -= snowman.speed;
+
+                        // Hüpf-Animation (langsamer)
+                        snowman.jumpPhase += 0.05;
+                        snowman.jumpOffset = -Math.abs(Math.sin(snowman.jumpPhase)) * 15;
+
+                        // Entferne wenn zu weit links
+                        if (snowman.x < -100) {
+                            snowmen.splice(i, 1);
+                            continue;
+                        }
+
+                        // Kollision mit Santa
+                        if (snowman.x < santa.x + santa.width &&
+                            snowman.x + snowman.width > santa.x &&
+                            snowman.y + snowman.jumpOffset < santa.y + santa.height &&
+                            snowman.y + snowman.jumpOffset + snowman.height > santa.y) {
+                            santa.health--;
+                            createParticles(snowman.x, snowman.y, '#ff0000', 15);
+                            snowmen.splice(i, 1);
+
+                            if (santa.health <= 0) {
+                                gameOver();
+                            }
+                            continue;
+                        }
+
+                        // Kollision mit Schneekugeln
+                        for (let j = snowballs.length - 1; j >= 0; j--) {
+                            const ball = snowballs[j];
+                            const dx = ball.x - snowman.x;
+                            const dy = ball.y - (snowman.y + snowman.jumpOffset);
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+
+                            if (distance < ball.radius + 25) {
+                                createParticles(snowman.x, snowman.y + snowman.jumpOffset, '#ffffff', 20);
+                                snowmen.splice(i, 1);
+                                snowballs.splice(j, 1);
+                                score += 10;
+                                root.getElementById('score').textContent = score;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Update Golems
+                    for (let i = golems.length - 1; i >= 0; i--) {
+                        const golem = golems[i];
+                        golem.x -= golem.speed;
+
+                        // Walking Animation
+                        golem.walkPhase += 0.08;
+
+                        // Entferne wenn zu weit links
+                        if (golem.x < -150) {
+                            golems.splice(i, 1);
+                            continue;
+                        }
+
+                        // Kollision mit Santa
+                        if (golem.x < santa.x + santa.width &&
+                            golem.x + golem.width > santa.x &&
+                            golem.y < santa.y + santa.height &&
+                            golem.y + golem.height > santa.y) {
+                            santa.health--;
+                            createParticles(golem.x, golem.y + 50, '#ff0000', 20);
+                            // Golem wird nicht zerstört bei Kollision - zu stark!
+
+                            if (santa.health <= 0) {
+                                gameOver();
+                            }
+                        }
+
+                        // Kollision mit Schneekugeln
+                        for (let j = snowballs.length - 1; j >= 0; j--) {
+                            const ball = snowballs[j];
+                            const dx = ball.x - golem.x;
+                            const dy = ball.y - (golem.y + 40);
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+
+                            if (distance < ball.radius + 40) {
+                                golem.health--;
+                                createParticles(ball.x, ball.y, '#ffffff', 15);
+                                snowballs.splice(j, 1);
+
+                                if (golem.health <= 0) {
+                                    // Golem besiegt - große Explosion!
+                                    createParticles(golem.x, golem.y + 50, '#ffffff', 40);
+                                    createConfetti(golem.x, golem.y + 50, 50);
+                                    golems.splice(i, 1);
+                                    score += 50;
+                                    root.getElementById('score').textContent = score;
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    // Update Baum-Kanonen
+                    for (let i = treeCannons.length - 1; i >= 0; i--) {
+                        const cannon = treeCannons[i];
+
+                        // Fall-Animation (mit Fallschirm)
+                        if (!cannon.landed) {
+                            cannon.y += cannon.fallSpeed;
+
+                            // Schwanken im Wind (nur während des Fallens)
+                            cannon.swingPhase += 0.05;
+                            const swingOffset = Math.sin(cannon.swingPhase) * 15;
+                            cannon.x = (canvas.width - 200) + swingOffset;
+
+                            // Landen wenn Boden erreicht
+                            if (cannon.y >= cannon.groundY) {
+                                cannon.y = cannon.groundY;
+                                cannon.landed = true;
+                                cannon.x = canvas.width - 200;  // Fixiere Position beim Landen
+                            }
+                        }
+
+                        // Rückstoß-Animation
+                        if (cannon.recoilOffset > 0) {
+                            cannon.recoilOffset -= 2;
+                            if (cannon.recoilOffset < 0) cannon.recoilOffset = 0;
+                        }
+
+                        // Schießen (auch während des Fallens!)
+                        cannon.shootTimer--;
+                        if (cannon.shootTimer <= 0) {
+                            // Berechne Winkel zu Santa (dynamisch)
+                            const dx = santa.x + santa.width / 2 - cannon.x;
+                            const dy = santa.y + santa.height / 2 - cannon.y;
+                            const cannonAngle = Math.atan2(dy, dx) + 0.08; // Höher zielen
+
+                            // Berechne Mündungsposition
+                            const barrelLength = 115;  // Positive - barrel extends forward in angle direction
+                            const muzzleX = cannon.x + 10 + barrelLength * Math.cos(cannonAngle);
+                            const muzzleY = cannon.y + 50 + barrelLength * Math.sin(cannonAngle);
+
+                            // Tannenbaum schießen (DIREKT auf Santa, ohne Bogen)
+                            const speed = 4.8;  // Nochmal 20% langsamer
+                            flyingTrees.push({
+                                x: muzzleX,
+                                y: muzzleY,
+                                vx: speed * Math.cos(cannonAngle),
+                                vy: speed * Math.sin(cannonAngle),
+                                rotation: Math.PI / 4,  // Anfangsrotation
+                                rotationSpeed: 0.15,
+                                hasGravity: false  // Keine Gravität - fliegt direkt
+                            });
+
+                            // Rückstoß!
+                            cannon.recoilOffset = 20;  // Nach rechts (wegen Rückstoß)
+
+                            // Nadel-Konfetti beim Schuss aus der Mündung!
+                            createNeedleConfetti(muzzleX, muzzleY, 25);
+
+                            cannon.shootTimer = 60 + Math.floor(Math.random() * 40);
+                        }
+
+                        // Entferne wenn zu weit links
+                        if (cannon.x < -250) {
+                            treeCannons.splice(i, 1);
+                            continue;
+                        }
+
+                        // Kollision mit Santa
+                        if (cannon.x < santa.x + santa.width + 70 &&
+                            cannon.x + cannon.width > santa.x &&
+                            cannon.y < santa.y + santa.height &&
+                            cannon.y + cannon.height > santa.y) {
+                            santa.health--;
+                            createNeedleConfetti(cannon.x, cannon.y + 60, 30);
+                            // Kanone wird nicht zerstört bei Kollision
+
+                            if (santa.health <= 0) {
+                                gameOver();
+                            }
+                        }
+
+                        // Kollision mit Schneekugeln
+                        for (let j = snowballs.length - 1; j >= 0; j--) {
+                            const ball = snowballs[j];
+                            const dx = ball.x - cannon.x;
+                            const dy = ball.y - (cannon.y + 60);
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+
+                            if (distance < ball.radius + 60) {
+                                cannon.health--;
+                                createParticles(ball.x, ball.y, '#ffffff', 15);
+                                snowballs.splice(j, 1);
+
+                                if (cannon.health <= 0) {
+                                    // Kanone zerstört - große Nadel-Explosion!
+                                    createNeedleConfetti(cannon.x, cannon.y + 60, 60);
+                                    createParticles(cannon.x, cannon.y + 60, '#654321', 30);
+                                    treeCannons.splice(i, 1);
+                                    score += 100;
+                                    root.getElementById('score').textContent = score;
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    // Update fliegende Tannenbäume
+                    for (let i = flyingTrees.length - 1; i >= 0; i--) {
+                        const tree = flyingTrees[i];
+                        tree.x += tree.vx;
+                        tree.y += tree.vy;
+                        tree.rotation += tree.rotationSpeed;
+
+                        // Gravität (nur wenn hasGravity nicht false ist)
+                        if (tree.hasGravity !== false) {
+                            tree.vy += 0.1;
+                        }
+
+                        // Entferne wenn außerhalb
+                        if (tree.x < -50 || tree.y > canvas.height + 50) {
+                            flyingTrees.splice(i, 1);
+                            continue;
+                        }
+
+                        // Kollision mit Santa
+                        if (tree.x > santa.x && tree.x < santa.x + santa.width &&
+                            tree.y > santa.y && tree.y < santa.y + santa.height) {
+                            santa.health--;
+                            createNeedleConfetti(tree.x, tree.y, 30);
+                            flyingTrees.splice(i, 1);
+
+                            if (santa.health <= 0) {
+                                gameOver();
+                            }
+                            continue;
+                        }
+
+                        // Kollision mit Schneekugeln
+                        for (let j = snowballs.length - 1; j >= 0; j--) {
+                            const ball = snowballs[j];
+                            const dx = ball.x - tree.x;
+                            const dy = ball.y - tree.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+
+                            if (distance < ball.radius + 20) {
+                                // Tannenbaum explodiert mit grünem Nadel-Konfetti!
+                                createNeedleConfetti(tree.x, tree.y, 35);
+                                flyingTrees.splice(i, 1);
+                                snowballs.splice(j, 1);
+                                score += 15;
+                                root.getElementById('score').textContent = score;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Update Rentiere
+                    for (let i = reindeer.length - 1; i >= 0; i--) {
+                        const deer = reindeer[i];
+                        deer.x -= deer.speed;
+
+                        // Leichte Auf-und-Ab-Bewegung
+                        deer.y += Math.sin(Date.now() / 200 + i) * 0.5;
+
+                        // Geschenk abwerfen
+                        deer.dropTimer--;
+                        if (deer.dropTimer <= 0 && deer.x > 0 && deer.x < canvas.width - 100) {
+                            const colors = ['#ffd700', '#ff69b4', '#00ffff', '#00ff00'];
+                            gifts.push({
+                                x: deer.x + 65,
+                                y: deer.y + 20,
+                                vy: 0,
+                                gravity: 0.3,
+                                color: colors[Math.floor(Math.random() * colors.length)],
+                                rotation: 0
+                            });
+                            deer.dropTimer = 80 + Math.floor(Math.random() * 60);
+                        }
+
+                        // Entferne wenn zu weit links
+                        if (deer.x < -150) {
+                            reindeer.splice(i, 1);
+                            continue;
+                        }
+
+                        // Kollision mit Schneekugeln
+                        for (let j = snowballs.length - 1; j >= 0; j--) {
+                            const ball = snowballs[j];
+                            const dx = ball.x - deer.x;
+                            const dy = ball.y - deer.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+
+                            if (distance < ball.radius + 30) {
+                                createParticles(deer.x, deer.y, '#8B4513', 20);
+                                reindeer.splice(i, 1);
+                                snowballs.splice(j, 1);
+                                score += 20;
+                                root.getElementById('score').textContent = score;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Update Geschenke
+                    for (let i = gifts.length - 1; i >= 0; i--) {
+                        const gift = gifts[i];
+                        gift.vy += gift.gravity;
+                        gift.y += gift.vy;
+                        gift.rotation += 0.1;
+
+                        // Entferne wenn zu weit unten
+                        if (gift.y > canvas.height + 50) {
+                            gifts.splice(i, 1);
+                            continue;
+                        }
+
+                        // Kollision mit Boden - Konfetti!
+                        if (gift.y >= canvas.height - 100) {
+                            createConfetti(gift.x, gift.y, 30);
+                            gifts.splice(i, 1);
+                            continue;
+                        }
+
+                        // Kollision mit Santa
+                        if (gift.x > santa.x && gift.x < santa.x + santa.width &&
+                            gift.y > santa.y && gift.y < santa.y + santa.height) {
+                            santa.health--;
+                            createConfetti(gift.x, gift.y, 30);
+                            gifts.splice(i, 1);
+
+                            if (santa.health <= 0) {
+                                gameOver();
+                            }
+                            continue;
+                        }
+
+                        // Kollision mit Schneekugeln - auch Konfetti!
+                        for (let j = snowballs.length - 1; j >= 0; j--) {
+                            const ball = snowballs[j];
+                            const dx = ball.x - gift.x;
+                            const dy = ball.y - gift.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+
+                            if (distance < ball.radius + 15) {
+                                createConfetti(gift.x, gift.y, 25);
+                                gifts.splice(i, 1);
+                                snowballs.splice(j, 1);
+                                score += 5;
+                                root.getElementById('score').textContent = score;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Update Lebkuchenmänner
+                    for (let i = gingerbreadMen.length - 1; i >= 0; i--) {
+                        const gingerbread = gingerbreadMen[i];
+                        gingerbread.x += gingerbread.vx;
+
+                        // Entferne wenn zu weit links
+                        if (gingerbread.x < -150) {
+                            gingerbreadMen.splice(i, 1);
+                            continue;
+                        }
+
+                        // Kollision mit Santa
+                        const distToSanta = Math.abs(gingerbread.x - santa.x);
+                        if (distToSanta < 80 && Math.abs(gingerbread.y - santa.y) < 100) {
+                            santa.health -= 2; // Macht mehr Schaden als normale Gegner!
+                            createGingerbreadCrumbs(gingerbread.x, gingerbread.y, 40);
+                            gingerbreadMen.splice(i, 1);
+
+                            if (santa.health <= 0) {
+                                gameOver();
+                            }
+                            continue;
+                        }
+
+                        // Kollision mit Schneekugeln
+                        for (let j = snowballs.length - 1; j >= 0; j--) {
+                            const ball = snowballs[j];
+                            const dx = ball.x - gingerbread.x;
+                            const dy = ball.y - gingerbread.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+
+                            if (distance < ball.radius + 90) {
+                                gingerbread.health--;
+                                snowballs.splice(j, 1);
+                                createGingerbreadCrumbs(gingerbread.x, gingerbread.y, 10);
+
+                                if (gingerbread.health <= 0) {
+                                    // Riesige Explosion mit vielen Krümeln!
+                                    createGingerbreadCrumbs(gingerbread.x, gingerbread.y, 60);
+                                    gingerbreadMen.splice(i, 1);
+                                    score += 150; // Hoher Score für Boss!
+                                    root.getElementById('score').textContent = score;
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    // Update Schneeflocken (fallen gerade nach unten)
+                    snowflakes.forEach(flake => {
+                        flake.y += flake.speed;
+                        flake.swing += flake.swingSpeed;
+
+                        // Reset wenn am Boden
+                        if (flake.y > canvas.height - 100) {
+                            flake.y = -10;
+                            flake.x = Math.random() * canvas.width;
+                        }
+                    });
+
+                    // Update Partikel
+                    for (let i = particles.length - 1; i >= 0; i--) {
+                        const p = particles[i];
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.vy += 0.1; // Gravität für Konfetti
+                        if (p.rotation !== undefined) {
+                            p.rotation += p.rotationSpeed;
+                        }
+                        p.life--;
+
+                        if (p.life <= 0) {
+                            particles.splice(i, 1);
+                        }
+                    }
+
+                    // Spawne Schneemänner
+                    snowmanSpawnTimer++;
+                    if (snowmanSpawnTimer >= snowmanSpawnInterval) {
+                        spawnSnowman();
+                        snowmanSpawnTimer = 0;
+                        // Erhöhe Schwierigkeit
+                        if (snowmanSpawnInterval > 60) {
+                            snowmanSpawnInterval -= 1;
+                        }
+                    }
+
+                    // Spawne Rentiere
+                    reindeerSpawnTimer++;
+                    if (reindeerSpawnTimer >= reindeerSpawnInterval) {
+                        spawnReindeer();
+                        reindeerSpawnTimer = 0;
+                        // Erhöhe Schwierigkeit
+                        if (reindeerSpawnInterval > 150) {
+                            reindeerSpawnInterval -= 1;
+                        }
+                    }
+
+                    // Spawne Golems (alle 10-15 Sekunden)
+                    golemSpawnTimer++;
+                    if (golemSpawnTimer >= golemSpawnInterval) {
+                        spawnGolem();
+                        golemSpawnTimer = 0;
+                        // Zufälliges nächstes Intervall
+                        golemSpawnInterval = 600 + Math.floor(Math.random() * 300);
+                    }
+
+                    // Spawne Baum-Kanonen (alle 15-20 Sekunden)
+                    treeCannonSpawnTimer++;
+                    if (treeCannonSpawnTimer >= treeCannonSpawnInterval) {
+                        spawnTreeCannon();
+                        treeCannonSpawnTimer = 0;
+                        // Zufälliges nächstes Intervall
+                        treeCannonSpawnInterval = 900 + Math.floor(Math.random() * 300);
+                    }
+
+                    // Spawne Lebkuchenmann
+                    gingerbreadSpawnTimer++;
+                    if (gingerbreadSpawnTimer >= gingerbreadSpawnInterval) {
+                        spawnGingerbreadMan();
+                        gingerbreadSpawnTimer = 0;
+                        // Zufälliges nächstes Intervall
+                        gingerbreadSpawnInterval = 1200 + Math.floor(Math.random() * 600);
+                    }
+
+                    // Spawne Fallschirm-Geschenk
+                    parachuteGiftSpawnTimer++;
+                    if (parachuteGiftSpawnTimer >= parachuteGiftSpawnInterval) {
+                        spawnParachuteGift();
+                        parachuteGiftSpawnTimer = 0;
+                        // Zufälliges nächstes Intervall (30±5 Sekunden)
+                        parachuteGiftSpawnInterval = 1800 + Math.floor(Math.random() * 600);
+                    }
+
+                    // Update Fallschirm-Geschenke
+                    for (let i = parachuteGifts.length - 1; i >= 0; i--) {
+                        const gift = parachuteGifts[i];
+                        gift.y += gift.vy;
+                        gift.parachutePhase += 0.05;
+
+                        // Entfernen wenn außerhalb
+                        if (gift.y > canvas.height) {
+                            parachuteGifts.splice(i, 1);
+                            continue;
+                        }
+
+                        // Kollision mit Schneebällen
+                        for (let j = snowballs.length - 1; j >= 0; j--) {
+                            const ball = snowballs[j];
+                            const dx = ball.x - gift.x;
+                            const dy = ball.y - gift.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+
+                            if (distance < 30) {
+                                snowballs.splice(j, 1);
+                                gift.health--;
+
+                                // Partikel-Effekt
+                                createParticles(ball.x, ball.y, '#ffffff', 5);
+
+                                if (gift.health <= 0) {
+                                    // Geschenk zerstört - Powerup droppen
+                                    powerups.push({
+                                        x: gift.x,
+                                        y: gift.y,
+                                        vx: 0,
+                                        vy: 2,
+                                        pulse: 0
+                                    });
+                                    createConfetti(gift.x, gift.y, 20);
+                                    parachuteGifts.splice(i, 1);
+                                    score += 50;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Update Powerups
+                    for (let i = powerups.length - 1; i >= 0; i--) {
+                        const powerup = powerups[i];
+                        powerup.y += powerup.vy;
+                        powerup.pulse += 0.1;
+
+                        // Entfernen wenn außerhalb
+                        if (powerup.y > canvas.height) {
+                            powerups.splice(i, 1);
+                            continue;
+                        }
+
+                        // Kollision mit Santa
+                        const dx = powerup.x - (santa.x + santa.width / 2);
+                        const dy = powerup.y - (santa.y + santa.height / 2);
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance < 40) {
+                            // Powerup eingesammelt!
+                            powerupActive = true;
+                            powerupTimer = powerupDuration;
+                            powerups.splice(i, 1);
+                            createConfetti(powerup.x, powerup.y, 30);
+                            score += 100;
+                        }
+                    }
+
+                    // Update Powerup Timer
+                    if (powerupActive) {
+                        powerupTimer--;
+                        if (powerupTimer <= 0) {
+                            powerupActive = false;
+                        }
+                    }
+                }
+
+                // Zeichne alles
+                function draw() {
+                    // Himmel (Gradient bereits im CSS)
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    // Bäume im Hintergrund
+                    backgroundTrees.forEach(tree => {
+                        tree.x -= 0.28;  // Nochmal 20% langsamer
+                        if (tree.x < -50) {
+                            tree.x = canvas.width + 50;
+                        }
+                        drawTree(tree);
+                    });
+
+                    // Boden
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
+
+                    // Schneeflocken (fallen gerade runter)
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                    snowflakes.forEach(flake => {
+                        ctx.beginPath();
+                        ctx.arc(flake.x, flake.y, flake.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+
+                    // Rentiere (im Hintergrund)
+                    reindeer.forEach(drawReindeer);
+
+                    // Geschenke
+                    gifts.forEach(gift => {
+                        ctx.save();
+                        ctx.translate(gift.x, gift.y);
+                        ctx.rotate(gift.rotation);
+                        ctx.translate(-gift.x, -gift.y);
+                        drawGift(gift);
+                        ctx.restore();
+                    });
+
+                    // Partikel / Konfetti
+                    particles.forEach(p => {
+                        ctx.save();
+                        ctx.fillStyle = p.color;
+                        ctx.globalAlpha = p.life / 60;
+
+                        if (p.rotation !== undefined) {
+                            // Konfetti mit Rotation
+                            ctx.translate(p.x, p.y);
+                            ctx.rotate(p.rotation);
+                            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                        } else {
+                            // Normale Partikel (rund)
+                            ctx.beginPath();
+                            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+
+                        ctx.globalAlpha = 1;
+                        ctx.restore();
+                    });
+
+                    // Schneemänner
+                    snowmen.forEach(drawSnowman);
+
+                    // Golems (größer, darüber)
+                    golems.forEach(drawGolem);
+
+                    // Lebkuchenmänner (riesiger Boss)
+                    gingerbreadMen.forEach(drawGingerbreadMan);
+
+                    // Baum-Kanonen (Boss-Gegner)
+                    treeCannons.forEach(drawTreeCannon);
+
+                    // Fliegende Tannenbäume
+                    flyingTrees.forEach(drawFlyingTree);
+
+                    // Schneekugeln
+                    snowballs.forEach(drawSnowball);
+
+                    // Fallschirm-Geschenke
+                    parachuteGifts.forEach(drawParachuteGift);
+
+                    // Powerups
+                    powerups.forEach(drawPowerup);
+
+                    // Santa
+                    drawSanta();
+
+                    // Powerup-Indikator (wenn aktiv)
+                    if (powerupActive) {
+                        const timeLeft = Math.ceil(powerupTimer / 60);
+                        ctx.save();
+
+                        // Timer Text
+                        ctx.fillStyle = '#ffffff';
+                        ctx.strokeStyle = '#000000';
+                        ctx.lineWidth = 2;
+                        ctx.font = 'bold 16px monospace';
+                        ctx.textAlign = 'left';
+                        ctx.strokeText(`SPREAD: ${timeLeft}s`, 10, 80);
+                        ctx.fillText(`SPREAD: ${timeLeft}s`, 10, 80);
+
+                        ctx.restore();
+                    }
+
+                    // Lautsprecher mit Beat-Animation
+                    drawSpeakers();
+                }
+
+                // Zeichne animierte Lautsprecher
+                let beatPhase = 0;
+                function drawSpeakers() {
+                    beatPhase += 0.12; // 20% langsamer
+                    const pulse = Math.abs(Math.sin(beatPhase)) * 0.3 + 0.7; // Pulsiert zwischen 0.7 und 1.0
+
+                    // Linker Lautsprecher (links vom Rapper)
+                    drawSpeaker(canvas.width - 170, canvas.height - 60, pulse, false);
+
+                    // Rechter Lautsprecher (rechts vom Rapper, gespiegelt)
+                    drawSpeaker(canvas.width - 50, canvas.height - 60, pulse, true);
+
+                    // Scheinwerfer-Lichtkegel (transparent, darunter)
+                    drawSpotlights(canvas.width - 110, canvas.height - 60, pulse);
+
+                    // Fan-Crowd zwischen den Scheinwerfern
+                    drawFanCrowd(canvas.width - 130, canvas.height - 15, pulse);
+
+                    // Rap-Elf
+                    drawRapElf(canvas.width - 110, canvas.height - 40, pulse);
+                }
+
+                // Zeichne Bühne
+                function drawStage(x, y, pulse) {
+                    ctx.save();
+
+                    // Bühnen-Plattform (dunkelgrau/schwarz)
+                    ctx.fillStyle = '#2a2a2a';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2;
+                    ctx.fillRect(x - 25, y, 50, 10);
+                    ctx.strokeRect(x - 25, y, 50, 10);
+
+                    // Holz-Textur (Linien)
+                    ctx.strokeStyle = '#1a1a1a';
+                    ctx.lineWidth = 1;
+                    for (let i = 0; i < 5; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(x - 25 + i * 12, y);
+                        ctx.lineTo(x - 25 + i * 12, y + 10);
+                        ctx.stroke();
+                    }
+
+                    // Bühnen-Beine
+                    ctx.fillStyle = '#1a1a1a';
+                    ctx.fillRect(x - 20, y + 10, 4, 8);
+                    ctx.fillRect(x + 16, y + 10, 4, 8);
+
+                    ctx.restore();
+                }
+
+                // Zeichne Scheinwerfer mit beweglichem Licht
+                let spotlightAngle = 0;
+                function drawSpotlights(elfX, elfY, pulse) {
+                    ctx.save();
+
+                    spotlightAngle += 0.02; // Langsame Bewegung
+
+                    // Linker Scheinwerfer (orange/gelb)
+                    const leftAngle = Math.sin(spotlightAngle) * 0.15;
+                    drawSpotlight(elfX - 30, canvas.height - 15, elfX, elfY, 'rgba(255, 200, 0, 0.15)', leftAngle, pulse);
+
+                    // Rechter Scheinwerfer (blau/cyan)
+                    const rightAngle = Math.sin(spotlightAngle + Math.PI) * 0.15;
+                    drawSpotlight(elfX + 30, canvas.height - 15, elfX, elfY, 'rgba(0, 200, 255, 0.15)', rightAngle, pulse);
+
+                    ctx.restore();
+                }
+
+                function drawSpotlight(lightX, lightY, targetX, targetY, color, angleOffset, pulse) {
+                    ctx.save();
+
+                    // Lichtkegel (Dreieck)
                     ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.moveTo(lightX, lightY);
+
+                    // Winkel zum Ziel mit Offset
+                    const baseAngle = Math.atan2(targetY - lightY, targetX - lightX);
+                    const spread = 0.4; // Breite des Lichtkegels
+
+                    const leftEdge = baseAngle - spread + angleOffset;
+                    const rightEdge = baseAngle + spread + angleOffset;
+                    const length = 70;
+
+                    ctx.lineTo(targetX + Math.cos(leftEdge) * 20, targetY + Math.sin(leftEdge) * 20);
+                    ctx.lineTo(targetX + Math.cos(rightEdge) * 20, targetY + Math.sin(rightEdge) * 20);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Verstärktes Licht beim Beat
+                    if (pulse > 0.9) {
+                        ctx.fillStyle = color.replace('0.15', '0.25');
+                        ctx.fill();
+                    }
+
+                    // Scheinwerfer-Gerät selbst
+                    ctx.fillStyle = '#1a1a1a';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.arc(lightX, lightY, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Linse (hell)
+                    ctx.fillStyle = '#ffff00';
+                    ctx.beginPath();
+                    ctx.arc(lightX, lightY, 2, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.restore();
+                }
+
+                // Zeichne minimalistische Fan-Crowd (viel voller!)
+                function drawFanCrowd(x, y, pulse) {
+                    ctx.save();
+
+                    const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#a8e6cf', '#ff9a8b', '#95e1d3', '#f38181', '#aa96da'];
+
+                    // Mehrere Reihen bis zum unteren Rand
+                    const rows = 4;
+                    const fansPerRow = 5; // Weniger Fans, um Platz für Bühne zu lassen
+                    const horizontalSpacing = 10;
+                    const verticalSpacing = 12;
+
+                    let fanIndex = 0;
+                    for (let row = 0; row < rows; row++) {
+                        for (let col = 0; col < fansPerRow; col++) {
+                            // Wellenförmiges Schwanken im Kegel
+                            const sway = Math.sin(beatPhase * 2 + col * 0.5 + row * 0.3) * 1;
+
+                            const fanX = x + col * horizontalSpacing + sway;
+                            const fanY = y + row * verticalSpacing;
+                            const color = colors[fanIndex % colors.length];
+
+                            // Hüpfen zum Beat (abwechselnd)
+                            const jump = pulse > 0.85 ? (fanIndex % 3 === 0 ? -3 : fanIndex % 3 === 1 ? -5 : -2) : 0;
+
+                            // Körper (einfacher Kreis)
+                            ctx.fillStyle = color;
+                            ctx.strokeStyle = '#000000';
+                            ctx.lineWidth = 1;
+                            ctx.beginPath();
+                            ctx.arc(fanX, fanY + jump, 3, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.stroke();
+
+                            // Kopf (kleiner Kreis oben)
+                            ctx.fillStyle = '#ffd700';
+                            ctx.beginPath();
+                            ctx.arc(fanX, fanY - 5 + jump, 2, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.stroke();
+
+                            // Arme hoch zum Jubeln
+                            ctx.strokeStyle = color;
+                            ctx.lineWidth = 1.5;
+                            if (pulse > 0.85) {
+                                // Beide Arme hoch
+                                ctx.beginPath();
+                                ctx.moveTo(fanX, fanY - 2 + jump);
+                                ctx.lineTo(fanX - 3, fanY - 7 + jump);
+                                ctx.moveTo(fanX, fanY - 2 + jump);
+                                ctx.lineTo(fanX + 3, fanY - 7 + jump);
+                                ctx.stroke();
+                            } else {
+                                // Ein Arm oben, ein Arm zur Seite
+                                ctx.beginPath();
+                                ctx.moveTo(fanX, fanY - 2 + jump);
+                                ctx.lineTo(fanX - 2, fanY - 5 + jump);
+                                ctx.moveTo(fanX, fanY - 2 + jump);
+                                ctx.lineTo(fanX + 3, fanY - 1 + jump);
+                                ctx.stroke();
+                            }
+
+                            fanIndex++;
+                        }
+                    }
+
+                    ctx.restore();
+                }
+
+                // Zeichne Rap-Elf
+                function drawRapElf(x, y, pulse) {
+                    ctx.save();
+
+                    // Kopf-Nicken zum Beat
+                    const headBob = (pulse - 0.85) * 8; // Nickt zum Beat
+
+                    // Körper (grünes Elfen-Outfit)
+                    ctx.fillStyle = '#228b22';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 1.5;
+
+                    // Beine
+                    ctx.fillRect(x - 6, y + 5, 4, 12);
+                    ctx.strokeRect(x - 6, y + 5, 4, 12);
+                    ctx.fillRect(x + 2, y + 5, 4, 12);
+                    ctx.strokeRect(x + 2, y + 5, 4, 12);
+
+                    // Körper
+                    ctx.beginPath();
+                    ctx.ellipse(x, y, 8, 10, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Kopf (bewegt sich zum Beat)
+                    const headY = y - 12 + headBob;
+                    ctx.fillStyle = '#ffd700'; // Goldene Haut
+                    ctx.beginPath();
+                    ctx.arc(x, headY, 7, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Elfen-Mütze (rot mit weißer Bommel)
+                    ctx.fillStyle = '#ff0000';
+                    ctx.beginPath();
+                    ctx.moveTo(x - 7, headY - 4);
+                    ctx.lineTo(x + 7, headY - 4);
+                    ctx.lineTo(x + 2, headY - 15);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Bommel
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(x + 2, headY - 15, 2, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Augen (cool, geschlossen beim Beat)
+                    ctx.fillStyle = '#000000';
+                    if (pulse > 0.9) {
+                        // Geschlossen beim harten Beat
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(x - 3, headY);
+                        ctx.lineTo(x - 1, headY);
+                        ctx.moveTo(x + 1, headY);
+                        ctx.lineTo(x + 3, headY);
+                        ctx.stroke();
+                        ctx.lineWidth = 1.5;
+                    } else {
+                        // Offen
+                        ctx.beginPath();
+                        ctx.arc(x - 2.5, headY, 1.5, 0, Math.PI * 2);
+                        ctx.arc(x + 2.5, headY, 1.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    // Mund (O-Form beim Rappen)
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    if (pulse > 0.85) {
+                        ctx.arc(x, headY + 3, 2, 0, Math.PI * 2); // Großes O
+                    } else {
+                        ctx.arc(x, headY + 3, 1.5, 0, Math.PI); // Lächeln
+                    }
+                    ctx.stroke();
+
+                    // Arm mit Mikrofon (bewegt sich zum Beat)
+                    const armExtension = pulse > 0.85 ? 3 : 0;
+
+                    // Arm
+                    ctx.strokeStyle = '#228b22';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(x + 6, y - 5);
+                    ctx.lineTo(x + 12 + armExtension, y - 2);
+                    ctx.stroke();
+
+                    // Hand
+                    ctx.fillStyle = '#ffd700';
+                    ctx.beginPath();
+                    ctx.arc(x + 12 + armExtension, y - 2, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Mikrofon (klassisches Mic)
+                    ctx.fillStyle = '#333333';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 1;
+                    // Mikrofon-Kopf
+                    ctx.beginPath();
+                    ctx.ellipse(x + 16 + armExtension, y - 3, 2.5, 3.5, Math.PI / 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    // Gitter
+                    ctx.strokeStyle = '#666666';
+                    for (let i = 0; i < 3; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(x + 14.5 + armExtension, y - 4 + i * 1.5);
+                        ctx.lineTo(x + 17.5 + armExtension, y - 2 + i * 1.5);
+                        ctx.stroke();
+                    }
+                    // Kabel
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(x + 16 + armExtension, y);
+                    ctx.lineTo(x + 18, y + 8);
+                    ctx.stroke();
+
+                    // Anderer Arm (hängt locker)
+                    ctx.strokeStyle = '#228b22';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(x - 6, y - 5);
+                    ctx.lineTo(x - 10, y + 3);
+                    ctx.stroke();
+
+                    // Hand
+                    ctx.fillStyle = '#ffd700';
+                    ctx.beginPath();
+                    ctx.arc(x - 10, y + 3, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Schuhe (spitze Elfen-Schuhe)
+                    ctx.fillStyle = '#654321';
                     ctx.strokeStyle = '#000000';
                     ctx.lineWidth = 1;
                     ctx.beginPath();
-                    ctx.arc(fanX, fanY + jump, 3, 0, Math.PI * 2);
+                    ctx.ellipse(x - 6, y + 17, 3, 2, 0, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.stroke();
-
-                    // Kopf (kleiner Kreis oben)
-                    ctx.fillStyle = '#ffd700';
                     ctx.beginPath();
-                    ctx.arc(fanX, fanY - 5 + jump, 2, 0, Math.PI * 2);
+                    ctx.ellipse(x + 2, y + 17, 3, 2, 0, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.stroke();
 
-                    // Arme hoch zum Jubeln
-                    ctx.strokeStyle = color;
+                    ctx.restore();
+                }
+
+                function drawSpeaker(x, y, pulse, mirror) {
+                    ctx.save();
+
+                    // Spiegeln für rechte Box
+                    if (mirror) {
+                        ctx.translate(x, y);
+                        ctx.scale(-1, 1);
+                        ctx.translate(-x, -y);
+                    }
+
+                    // Lautsprecher-Box (schwarz mit Holz-Rahmen) - 30% kleiner
+                    ctx.fillStyle = '#1a1a1a';
+                    ctx.strokeStyle = '#654321';
+                    ctx.lineWidth = 3;
+                    ctx.fillRect(x - 28, y - 42, 56, 84);
+                    ctx.strokeRect(x - 28, y - 42, 56, 84);
+
+                    // Bass-Lautsprecher (pulsiert mit Beat) - 30% kleiner
+                    const bassRadius = 17.5 * pulse;
+                    ctx.fillStyle = '#333333';
+                    ctx.beginPath();
+                    ctx.arc(x, y, bassRadius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Membran-Details
+                    ctx.strokeStyle = '#555555';
                     ctx.lineWidth = 1.5;
-                    if (pulse > 0.85) {
-                        // Beide Arme hoch
+                    for (let i = 1; i <= 3; i++) {
                         ctx.beginPath();
-                        ctx.moveTo(fanX, fanY - 2 + jump);
-                        ctx.lineTo(fanX - 3, fanY - 7 + jump);
-                        ctx.moveTo(fanX, fanY - 2 + jump);
-                        ctx.lineTo(fanX + 3, fanY - 7 + jump);
-                        ctx.stroke();
-                    } else {
-                        // Ein Arm oben, ein Arm zur Seite
-                        ctx.beginPath();
-                        ctx.moveTo(fanX, fanY - 2 + jump);
-                        ctx.lineTo(fanX - 2, fanY - 5 + jump);
-                        ctx.moveTo(fanX, fanY - 2 + jump);
-                        ctx.lineTo(fanX + 3, fanY - 1 + jump);
+                        ctx.arc(x, y, bassRadius * (i / 4), 0, Math.PI * 2);
                         ctx.stroke();
                     }
 
-                    fanIndex++;
-                }
-            }
-
-            ctx.restore();
-        }
-
-        // Zeichne Rap-Elf
-        function drawRapElf(x, y, pulse) {
-            ctx.save();
-
-            // Kopf-Nicken zum Beat
-            const headBob = (pulse - 0.85) * 8; // Nickt zum Beat
-
-            // Körper (grünes Elfen-Outfit)
-            ctx.fillStyle = '#228b22';
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 1.5;
-
-            // Beine
-            ctx.fillRect(x - 6, y + 5, 4, 12);
-            ctx.strokeRect(x - 6, y + 5, 4, 12);
-            ctx.fillRect(x + 2, y + 5, 4, 12);
-            ctx.strokeRect(x + 2, y + 5, 4, 12);
-
-            // Körper
-            ctx.beginPath();
-            ctx.ellipse(x, y, 8, 10, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Kopf (bewegt sich zum Beat)
-            const headY = y - 12 + headBob;
-            ctx.fillStyle = '#ffd700'; // Goldene Haut
-            ctx.beginPath();
-            ctx.arc(x, headY, 7, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Elfen-Mütze (rot mit weißer Bommel)
-            ctx.fillStyle = '#ff0000';
-            ctx.beginPath();
-            ctx.moveTo(x - 7, headY - 4);
-            ctx.lineTo(x + 7, headY - 4);
-            ctx.lineTo(x + 2, headY - 15);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-
-            // Bommel
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(x + 2, headY - 15, 2, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Augen (cool, geschlossen beim Beat)
-            ctx.fillStyle = '#000000';
-            if (pulse > 0.9) {
-                // Geschlossen beim harten Beat
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(x - 3, headY);
-                ctx.lineTo(x - 1, headY);
-                ctx.moveTo(x + 1, headY);
-                ctx.lineTo(x + 3, headY);
-                ctx.stroke();
-                ctx.lineWidth = 1.5;
-            } else {
-                // Offen
-                ctx.beginPath();
-                ctx.arc(x - 2.5, headY, 1.5, 0, Math.PI * 2);
-                ctx.arc(x + 2.5, headY, 1.5, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // Mund (O-Form beim Rappen)
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            if (pulse > 0.85) {
-                ctx.arc(x, headY + 3, 2, 0, Math.PI * 2); // Großes O
-            } else {
-                ctx.arc(x, headY + 3, 1.5, 0, Math.PI); // Lächeln
-            }
-            ctx.stroke();
-
-            // Arm mit Mikrofon (bewegt sich zum Beat)
-            const armExtension = pulse > 0.85 ? 3 : 0;
-
-            // Arm
-            ctx.strokeStyle = '#228b22';
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            ctx.moveTo(x + 6, y - 5);
-            ctx.lineTo(x + 12 + armExtension, y - 2);
-            ctx.stroke();
-
-            // Hand
-            ctx.fillStyle = '#ffd700';
-            ctx.beginPath();
-            ctx.arc(x + 12 + armExtension, y - 2, 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Mikrofon (klassisches Mic)
-            ctx.fillStyle = '#333333';
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 1;
-            // Mikrofon-Kopf
-            ctx.beginPath();
-            ctx.ellipse(x + 16 + armExtension, y - 3, 2.5, 3.5, Math.PI / 4, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-            // Gitter
-            ctx.strokeStyle = '#666666';
-            for (let i = 0; i < 3; i++) {
-                ctx.beginPath();
-                ctx.moveTo(x + 14.5 + armExtension, y - 4 + i * 1.5);
-                ctx.lineTo(x + 17.5 + armExtension, y - 2 + i * 1.5);
-                ctx.stroke();
-            }
-            // Kabel
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(x + 16 + armExtension, y);
-            ctx.lineTo(x + 18, y + 8);
-            ctx.stroke();
-
-            // Anderer Arm (hängt locker)
-            ctx.strokeStyle = '#228b22';
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            ctx.moveTo(x - 6, y - 5);
-            ctx.lineTo(x - 10, y + 3);
-            ctx.stroke();
-
-            // Hand
-            ctx.fillStyle = '#ffd700';
-            ctx.beginPath();
-            ctx.arc(x - 10, y + 3, 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Schuhe (spitze Elfen-Schuhe)
-            ctx.fillStyle = '#654321';
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.ellipse(x - 6, y + 17, 3, 2, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.ellipse(x + 2, y + 17, 3, 2, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.restore();
-        }
-
-        function drawSpeaker(x, y, pulse, mirror) {
-            ctx.save();
-
-            // Spiegeln für rechte Box
-            if (mirror) {
-                ctx.translate(x, y);
-                ctx.scale(-1, 1);
-                ctx.translate(-x, -y);
-            }
-
-            // Lautsprecher-Box (schwarz mit Holz-Rahmen) - 30% kleiner
-            ctx.fillStyle = '#1a1a1a';
-            ctx.strokeStyle = '#654321';
-            ctx.lineWidth = 3;
-            ctx.fillRect(x - 28, y - 42, 56, 84);
-            ctx.strokeRect(x - 28, y - 42, 56, 84);
-
-            // Bass-Lautsprecher (pulsiert mit Beat) - 30% kleiner
-            const bassRadius = 17.5 * pulse;
-            ctx.fillStyle = '#333333';
-            ctx.beginPath();
-            ctx.arc(x, y, bassRadius, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Membran-Details
-            ctx.strokeStyle = '#555555';
-            ctx.lineWidth = 1.5;
-            for (let i = 1; i <= 3; i++) {
-                ctx.beginPath();
-                ctx.arc(x, y, bassRadius * (i / 4), 0, Math.PI * 2);
-                ctx.stroke();
-            }
-
-            // Hochton-Lautsprecher (oben, kleiner, pulsiert auch) - 30% kleiner
-            const trebleRadius = 7 * pulse;
-            ctx.fillStyle = '#2a2a2a';
-            ctx.beginPath();
-            ctx.arc(x, y - 31.5, trebleRadius, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.strokeStyle = '#444444';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.arc(x, y - 31.5, trebleRadius * 0.6, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // Sound-Wellen (wenn Beat stark ist) - 30% kleiner
-            if (pulse > 0.9) {
-                ctx.strokeStyle = `rgba(128, 128, 128, 0.5)`;
-                ctx.lineWidth = 1.5;
-                for (let i = 0; i < 3; i++) {
+                    // Hochton-Lautsprecher (oben, kleiner, pulsiert auch) - 30% kleiner
+                    const trebleRadius = 7 * pulse;
+                    ctx.fillStyle = '#2a2a2a';
                     ctx.beginPath();
-                    const waveRadius = 24.5 + i * 10.5;
-                    ctx.arc(x, y, waveRadius, -Math.PI / 4, Math.PI / 4);
+                    ctx.arc(x, y - 31.5, trebleRadius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#444444';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(x, y - 31.5, trebleRadius * 0.6, 0, Math.PI * 2);
                     ctx.stroke();
+
+                    // Sound-Wellen (wenn Beat stark ist) - 30% kleiner
+                    if (pulse > 0.9) {
+                        ctx.strokeStyle = `rgba(128, 128, 128, 0.5)`;
+                        ctx.lineWidth = 1.5;
+                        for (let i = 0; i < 3; i++) {
+                            ctx.beginPath();
+                            const waveRadius = 24.5 + i * 10.5;
+                            ctx.arc(x, y, waveRadius, -Math.PI / 4, Math.PI / 4);
+                            ctx.stroke();
+                        }
+                    }
+
+                    // LED-Anzeige (pulsiert mit Beat) - 30% kleiner
+                    const ledBrightness = pulse;
+                    ctx.fillStyle = `rgba(255, 0, 0, ${ledBrightness})`;
+                    ctx.fillRect(x - 10.5, y + 35, 21, 4.2);
+
+                    ctx.restore();
                 }
-            }
 
-            // LED-Anzeige (pulsiert mit Beat) - 30% kleiner
-            const ledBrightness = pulse;
-            ctx.fillStyle = `rgba(255, 0, 0, ${ledBrightness})`;
-            ctx.fillRect(x - 10.5, y + 35, 21, 4.2);
+                // Game Loop
+                function gameLoop() {
+                    update();
+                    draw();
+                    updateHealth();
+                    requestAnimationFrame(gameLoop);
+                }
 
-            ctx.restore();
-        }
+                // Update Health Display
+                function updateHealth() {
+                    const healthDiv = root.getElementById('health');
+                    healthDiv.innerHTML = '';
+                    for (let i = 0; i < santa.maxHealth; i++) {
+                        const heart = document.createElement('span');
+                        heart.className = 'heart';
+                        heart.textContent = i < santa.health ? '❤️' : '🖤';
+                        healthDiv.appendChild(heart);
+                    }
+                }
 
-        // Game Loop
-        function gameLoop() {
-            update();
-            draw();
-            updateHealth();
-            requestAnimationFrame(gameLoop);
-        }
+                // Game Over
+                function gameOver() {
+                    gameRunning = false;
+                    root.getElementById('finalScore').textContent = score;
+                    root.getElementById('gameOver').style.display = 'block';
+                }
 
-        // Update Health Display
-        function updateHealth() {
-            const healthDiv = document.getElementById('health');
-            healthDiv.innerHTML = '';
-            for (let i = 0; i < santa.maxHealth; i++) {
-                const heart = document.createElement('span');
-                heart.className = 'heart';
-                heart.textContent = i < santa.health ? '❤️' : '🖤';
-                healthDiv.appendChild(heart);
-            }
-        }
+                // Restart Game
+                function restartGame() {
+                    gameRunning = true;
+                    score = 0;
+                    santa.health = santa.maxHealth;
+                    santa.y = canvas.height - 150;
+                    santa.velocityY = 0;
+                    santa.isJumping = false;
+                    santa.landingSquash = 0;
+                    snowballs.length = 0;
+                    snowmen.length = 0;
+                    particles.length = 0;
+                    reindeer.length = 0;
+                    gifts.length = 0;
+                    golems.length = 0;
+                    treeCannons.length = 0;
+                    flyingTrees.length = 0;
+                    gingerbreadMen.length = 0;
+                    snowmanSpawnTimer = 0;
+                    snowmanSpawnInterval = 120;
+                    reindeerSpawnTimer = 0;
+                    reindeerSpawnInterval = 200;
+                    golemSpawnTimer = 0;
+                    golemSpawnInterval = 600 + Math.floor(Math.random() * 300);
+                    treeCannonSpawnTimer = 0;
+                    treeCannonSpawnInterval = 900 + Math.floor(Math.random() * 300);
+                    gingerbreadSpawnTimer = 0;
+                    gingerbreadSpawnInterval = 1200 + Math.floor(Math.random() * 600);
+                    root.getElementById('score').textContent = score;
+                    root.getElementById('gameOver').style.display = 'none';
+                }
 
-        // Game Over
-        function gameOver() {
-            gameRunning = false;
-            document.getElementById('finalScore').textContent = score;
-            document.getElementById('gameOver').style.display = 'block';
-        }
+                // Event Listeners
+                canvas.addEventListener('mousemove', (e) => {
+                    const rect = canvas.getBoundingClientRect();
+                    // Skalierung berücksichtigen
+                    const scaleX = GAME_WIDTH / rect.width;
+                    const scaleY = GAME_HEIGHT / rect.height;
+                    mouseX = (e.clientX - rect.left) * scaleX;
+                    mouseY = (e.clientY - rect.top) * scaleY;
+                });
 
-        // Restart Game
-        function restartGame() {
-            gameRunning = true;
-            score = 0;
-            santa.health = santa.maxHealth;
-            santa.y = canvas.height - 150;
-            santa.velocityY = 0;
-            santa.isJumping = false;
-            santa.landingSquash = 0;
-            snowballs.length = 0;
-            snowmen.length = 0;
-            particles.length = 0;
-            reindeer.length = 0;
-            gifts.length = 0;
-            golems.length = 0;
-            treeCannons.length = 0;
-            flyingTrees.length = 0;
-            gingerbreadMen.length = 0;
-            snowmanSpawnTimer = 0;
-            snowmanSpawnInterval = 120;
-            reindeerSpawnTimer = 0;
-            reindeerSpawnInterval = 200;
-            golemSpawnTimer = 0;
-            golemSpawnInterval = 600 + Math.floor(Math.random() * 300);
-            treeCannonSpawnTimer = 0;
-            treeCannonSpawnInterval = 900 + Math.floor(Math.random() * 300);
-            gingerbreadSpawnTimer = 0;
-            gingerbreadSpawnInterval = 1200 + Math.floor(Math.random() * 600);
-            document.getElementById('score').textContent = score;
-            document.getElementById('gameOver').style.display = 'none';
-        }
+                canvas.addEventListener('click', () => {
+                    if (gameRunning) {
+                        shootSnowball();
+                    }
+                });
 
-        // Event Listeners
-        canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            // Skalierung berücksichtigen
-            const scaleX = GAME_WIDTH / rect.width;
-            const scaleY = GAME_HEIGHT / rect.height;
-            mouseX = (e.clientX - rect.left) * scaleX;
-            mouseY = (e.clientY - rect.top) * scaleY;
+                document.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space' && !santa.isJumping && gameRunning) {
+                        e.preventDefault();
+                        santa.velocityY = santa.jumpPower;
+                        santa.isJumping = true;
+                    }
+                });
+
+                // Mobile Controls
+                const jumpButton = root.getElementById('jumpButton');
+                jumpButton.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (!santa.isJumping && gameRunning) {
+                        santa.velocityY = santa.jumpPower;
+                        santa.isJumping = true;
+                    }
+                });
+
+                canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const rect = canvas.getBoundingClientRect();
+                    const touch = e.touches[0];
+                    // Skalierung berücksichtigen
+                    const scaleX = GAME_WIDTH / rect.width;
+                    const scaleY = GAME_HEIGHT / rect.height;
+                    mouseX = (touch.clientX - rect.left) * scaleX;
+                    mouseY = (touch.clientY - rect.top) * scaleY;
+                });
+
+                canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    const rect = canvas.getBoundingClientRect();
+                    const touch = e.touches[0];
+                    // Skalierung berücksichtigen
+                    const scaleX = GAME_WIDTH / rect.width;
+                    const scaleY = GAME_HEIGHT / rect.height;
+                    mouseX = (touch.clientX - rect.left) * scaleX;
+                    mouseY = (touch.clientY - rect.top) * scaleY;
+                });
+
+                root.getElementById('restartButton').addEventListener('click', restartGame);
+
+                // Auto-shoot (alle 20 Frames)
+                setInterval(() => {
+                    if (gameRunning) {
+                        shootSnowball();
+                    }
+                }, 333); // ~3 Schüsse pro Sekunde
+
+                // Musik Steuerung
+                const bgMusic = root.getElementById('bgMusic');
+                const muteButton = root.getElementById('muteButton');
+
+                // Setze Lautstärke auf 45%
+                bgMusic.volume = 0.45;
+
+                // Mute/Unmute Toggle
+                muteButton.addEventListener('click', () => {
+                    if (bgMusic.muted) {
+                        bgMusic.muted = false;
+                        muteButton.textContent = '🔊';
+                        muteButton.classList.remove('muted');
+                    } else {
+                        bgMusic.muted = true;
+                        muteButton.textContent = '🔇';
+                        muteButton.classList.add('muted');
+                    }
+                });
+
+                // Musik starten beim ersten User-Interaction (Browser-Policy)
+                const startMusic = () => {
+                    bgMusic.play().catch(e => {
+                        console.log('Autoplay verhindert. Musik startet beim ersten Klick.');
+                    });
+                    // Event Listener entfernen nach erstem Aufruf
+                    document.removeEventListener('click', startMusic);
+                    document.removeEventListener('keydown', startMusic);
+                };
+
+                document.addEventListener('click', startMusic);
+                document.addEventListener('keydown', startMusic);
+
+                // Start Game
+                gameLoop();
+
         });
-
-        canvas.addEventListener('click', () => {
-            if (gameRunning) {
-                shootSnowball();
-            }
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' && !santa.isJumping && gameRunning) {
-                e.preventDefault();
-                santa.velocityY = santa.jumpPower;
-                santa.isJumping = true;
-            }
-        });
-
-        // Mobile Controls
-        const jumpButton = document.getElementById('jumpButton');
-        jumpButton.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (!santa.isJumping && gameRunning) {
-                santa.velocityY = santa.jumpPower;
-                santa.isJumping = true;
-            }
-        });
-
-        canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            const rect = canvas.getBoundingClientRect();
-            const touch = e.touches[0];
-            // Skalierung berücksichtigen
-            const scaleX = GAME_WIDTH / rect.width;
-            const scaleY = GAME_HEIGHT / rect.height;
-            mouseX = (touch.clientX - rect.left) * scaleX;
-            mouseY = (touch.clientY - rect.top) * scaleY;
-        });
-
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            const rect = canvas.getBoundingClientRect();
-            const touch = e.touches[0];
-            // Skalierung berücksichtigen
-            const scaleX = GAME_WIDTH / rect.width;
-            const scaleY = GAME_HEIGHT / rect.height;
-            mouseX = (touch.clientX - rect.left) * scaleX;
-            mouseY = (touch.clientY - rect.top) * scaleY;
-        });
-
-        document.getElementById('restartButton').addEventListener('click', restartGame);
-
-        // Auto-shoot (alle 20 Frames)
-        setInterval(() => {
-            if (gameRunning) {
-                shootSnowball();
-            }
-        }, 333); // ~3 Schüsse pro Sekunde
-
-        // Musik Steuerung
-        const bgMusic = document.getElementById('bgMusic');
-        const muteButton = document.getElementById('muteButton');
-
-        // Setze Lautstärke auf 45%
-        bgMusic.volume = 0.45;
-
-        // Mute/Unmute Toggle
-        muteButton.addEventListener('click', () => {
-            if (bgMusic.muted) {
-                bgMusic.muted = false;
-                muteButton.textContent = '🔊';
-                muteButton.classList.remove('muted');
-            } else {
-                bgMusic.muted = true;
-                muteButton.textContent = '🔇';
-                muteButton.classList.add('muted');
-            }
-        });
-
-        // Musik starten beim ersten User-Interaction (Browser-Policy)
-        const startMusic = () => {
-            bgMusic.play().catch(e => {
-                console.log('Autoplay verhindert. Musik startet beim ersten Klick.');
-            });
-            // Event Listener entfernen nach erstem Aufruf
-            document.removeEventListener('click', startMusic);
-            document.removeEventListener('keydown', startMusic);
-        };
-
-        document.addEventListener('click', startMusic);
-        document.addEventListener('keydown', startMusic);
-
-        // Start Game
-        gameLoop();
     </script>
 </body>
 </html>
