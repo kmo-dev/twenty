@@ -1143,7 +1143,8 @@
 
         // Spawne Fallschirm-Geschenk
         function spawnParachuteGift() {
-            const x = Math.random() * (canvas.width - 200) + 100; // Nicht zu nah am Rand
+            // Spawne immer über dem Weihnachtsmann
+            const x = santa.x + santa.width / 2;
             parachuteGifts.push({
                 x: x,
                 y: -50,
@@ -1956,7 +1957,7 @@
                         gift.health--;
 
                         // Partikel-Effekt
-                        createExplosion(ball.x, ball.y, 5);
+                        createParticles(ball.x, ball.y, '#ffffff', 5);
 
                         if (gift.health <= 0) {
                             // Geschenk zerstört - Powerup droppen
