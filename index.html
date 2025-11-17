@@ -60,17 +60,6 @@
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
 
-        #buildNumber {
-            position: absolute;
-            bottom: 10px;
-            right: 20px;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.6);
-            font-family: monospace;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-            z-index: 10;
-        }
-
         #jumpButton {
             position: absolute;
             bottom: 30px;
@@ -235,8 +224,6 @@
 
         <div id="health"></div>
 
-        <div id="buildNumber"></div>
-
         <div id="jumpButton">⬆</div>
 
         <div id="musicControls">
@@ -258,16 +245,6 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-
-        // Build-Nummer generieren (Format: DDMM-HHMMSS)
-        const now = new Date();
-        const day = String(now.getDate()).padStart(2, '0');
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
-        const buildNumber = `${day}${month}-${hours}${minutes}${seconds}`;
-        document.getElementById('buildNumber').textContent = `Build: ${buildNumber}`;
 
         // Canvas Größe - fixe Spielfeldgröße für konsistentes Gameplay
         const GAME_WIDTH = 1200;
